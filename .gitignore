@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+npm-debug.log*
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+# El .gitignore de la raíz del pipeline ignora lib/: acá src/lib/ SÍ se versiona.
+!src/lib/
+*.tsbuildinfo
