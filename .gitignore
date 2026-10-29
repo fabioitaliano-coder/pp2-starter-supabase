@@ -1,7 +1,6 @@
 node_modules/
 dist/
-.env
-.env.*
+.env*
 !.env.example
 *.pem
 *.key
@@ -12,3 +11,8 @@ npm-debug.log*
 # El .gitignore de la raíz del pipeline ignora lib/: acá src/lib/ SÍ se versiona.
 !src/lib/
 *.tsbuildinfo
+.vercel
+
+# Material para el aula virtual (Moodle): no se versiona
+guia-autenticacion-y-permisos-supabase.html
+presentacion-aula-virtual.html
