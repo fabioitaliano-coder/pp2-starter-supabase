@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS public.productos (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS productos_nombre_idx ON public.productos (nombre);
+-- Concepto · El catálogo filtra activo y ordena por nombre: este índice parcial cubre ese SELECT.
+CREATE INDEX IF NOT EXISTS productos_activos_nombre_idx ON public.productos (nombre) WHERE activo;
 
 CREATE TABLE IF NOT EXISTS public.pedidos (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -75,6 +77,8 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
 -- Sin él, cada SELECT del cliente barre toda la tabla de pedidos.
 CREATE INDEX IF NOT EXISTS pedidos_user_id_idx ON public.pedidos (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS pedidos_estado_idx ON public.pedidos (estado);
+-- Filtro admin por estado + ORDER BY created_at DESC (cubre más que estado solo).
+CREATE INDEX IF NOT EXISTS pedidos_estado_created_at_idx ON public.pedidos (estado, created_at DESC);
 ALTER TABLE public.pedidos ALTER COLUMN total SET DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.pedido_detalles (
@@ -127,6 +131,8 @@ CREATE INDEX IF NOT EXISTS pedido_detalles_pedido_id_idx ON public.pedido_detall
 CREATE INDEX IF NOT EXISTS pedido_detalles_producto_id_idx ON public.pedido_detalles (producto_id);
 
 -- 5. HELPER is_admin() ------------------------------------------------------------
+-- Concepto · STABLE + (SELECT auth.uid()): Postgres evalúa el uid y el EXISTS
+-- una vez por consulta, no por fila. Es el "es_admin()" del enunciado.
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -134,7 +140,6 @@ SECURITY DEFINER
 STABLE
 SET search_path = public
 AS $$
-  -- (SELECT auth.uid()) = una lectura del uid por llamada, no por fila.
   SELECT EXISTS (
     SELECT 1 FROM public.profiles WHERE id = (SELECT auth.uid()) AND role = 'admin'
   );

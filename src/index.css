@@ -107,9 +107,14 @@ td select { min-width: 10rem; }
 .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem; margin: 0 0 1.25rem; align-items: stretch; }
 .producto { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; border-radius: 12px; transition: box-shadow .2s, transform .2s, border-color .2s; }
 @media (hover: hover) { .producto:hover { box-shadow: var(--sombra); transform: translateY(-2px); border-color: #b6c3d9; } }
-.marco { position: relative; }
+.marco {
+  position: relative;
+  aspect-ratio: 4 / 3; /* reserva el hueco: el emoji no empuja el layout al cargar */
+  overflow: hidden;
+  border-radius: var(--radio);
+}
 .ilustracion {
-  aspect-ratio: 4 / 3; border-radius: var(--radio); display: grid; place-items: center;
+  position: absolute; inset: 0; border-radius: var(--radio); display: grid; place-items: center;
   background: linear-gradient(180deg, #f8fafc, #eef2f7); font-size: 3.4rem; line-height: 1;
 }
 .en-carrito {

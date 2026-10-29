@@ -82,8 +82,8 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | Clave pública frente a clave privada | `.env.example`, `src/lib/supabase.ts`, `scripts/_clientes.mjs` |
 | Cliente singleton, `AuthContext`, rutas protegidas | `src/lib/`, `src/context/`, `src/routes/` |
 | Diseño (mismas clases que la app de referencia) | `design.md`, `src/index.css` |
-| Paginación con `.range()` y `count: 'exact'` | `MisPedidos.tsx`, `PanelAdmin.tsx` |
-| Esqueletos, caché del catálogo, UI optimista | `Esqueleto.tsx`, `catalogoCache.ts`, `PanelAdmin.tsx`, `CartPanel.tsx` |
+| Paginación con `.range()` sin `COUNT(*)` | `MisPedidos.tsx`, `PanelAdmin.tsx`, `PaginationControls.tsx` |
+| Caché por clave (TTL, SWR, dedupe, invalidación) | `consultaCache.ts`, `consultas.ts`, `useConsulta.ts` |
 | Pruebas que intentan romper la seguridad | `scripts/test-rls.mjs` |
 
 ## Supabase: crear el proyecto, conectar credenciales y preparar datos
@@ -123,23 +123,27 @@ En un proyecto Supabase de prueba vacío, seguí este orden:
 
 No insertamos usuarios directamente en `auth.users` con SQL: Supabase Auth administra esa tabla y el trigger del esquema crea cada perfil. Por eso el seed usa la Auth Admin API desde un script local con la clave secret, sin exponerla al navegador. Si solo necesitás preparar el esquema, ejecutá el DDL y omití `npm run seed`.
 
-## Rendimiento y carga (percepción de velocidad)
+## Rendimiento
 
-El starter prioriza que la app *se sienta* rápida, con técnicas chicas y comentadas en el código. No usa React Query.
+Este starter es una **SPA con Vite (CSR)**: el navegador baja el JavaScript, pinta la UI y habla con Supabase. El caché vive en el cliente (`consultaCache.ts`). Es la elección del curso porque se ve completo el camino *navegador → Auth → RLS*, sin un servidor Node intermedio.
 
-- **Esqueletos** en catálogo, Mis pedidos y Administración (`Esqueleto.tsx`) en lugar de una pantalla en blanco con «Cargando…».
-- **Carrito 100 % local:** `agregar`, `+` y `−` actualizan React al toque. El único momento de red es «Confirmar compra» (`crear_pedido`).
-- **Caché del catálogo (stale-while-revalidate):** al volver a la Tienda se muestra lo último conocido (memoria + `sessionStorage`) y se refresca en segundo plano (`catalogoCache.ts`).
-- **Cambio de estado optimista** en admin: el badge cambia al instante y se revierte con un mensaje si el `UPDATE` falla.
-- **Confirmar compra** deshabilita el botón, muestra un spinner («Enviando…») y, si sale bien, redirige a Mis pedidos con un aviso de éxito.
-- **Sin cascadas:** el panel admin pide lista y resumen con `Promise.all`; las consultas listan solo las columnas que pinta la UI.
-- **`getSession()` al arrancar** en `AuthContext`: lee el JWT local. `getUser()` haría un round-trip a Auth y retrasaría la barra.
-- **`React.lazy`** para Administración y Mis pedidos; el Layout pide el chunk al pasar el mouse o al enfocar el enlace.
-- **`preconnect`** al Project URL de Supabase en `index.html` (Vite reemplaza `%VITE_SUPABASE_URL%` al compilar; si corrés `npm run build` sin `.env` verás un aviso y el `href` queda vacío).
-- **Índices** en las FK que usan las políticas RLS y **`(SELECT auth.uid())`** en vez de `auth.uid()` suelto: Postgres evalúa el uid una vez por consulta. Ver comentarios en `supabase/schema.sql`. Si el proyecto demo ya tenía el esquema, **volvé a pegar y ejecutar `schema.sql`** (es idempotente).
-- `AuthContext` conserva el rol en memoria por 60 segundos. El valor no se guarda en `localStorage`; no concede acceso: RLS sigue autorizando cada consulta.
+**Cuándo convendría SSR/SSG (Next, Astro), sin migrar este repo:** si el primer HTML tiene que aparecer con datos (SEO, catálogo público indexable, TTFB en redes lentas) o si querés esconder la clave publishable detrás de un servidor. Para un panel con login y un catálogo de demostración, CSR + caché alcanza y se lee mejor.
 
-Para comprobar el code splitting, ejecutá `npm run build` y mirá `dist/assets`: Mis pedidos y Administración deben aparecer como chunks separados. En producción, usá las herramientas de red del navegador para distinguir descarga de JavaScript, handshake TLS, sesión local y tiempo de respuesta de Supabase.
+No usa TanStack Query: tres lecturas (catálogo, Mis pedidos, resumen admin) entran en un módulo de ~100 líneas que los alumnos pueden abrir. Una librería sumaría API (QueryClient, query keys) y kilobytes gzip a cambio de lo mismo.
+
+Técnicas (cada una comentada en el código):
+
+- **Esqueletos** en catálogo, Mis pedidos y Administración.
+- **Caché por clave** con TTL (30 s fresco), stale-while-revalidate, deduplicación de requests en vuelo, invalidación tras `crear_pedido` y tras cambiar estado, refetch al volver el foco solo si el dato está viejo. El catálogo además se guarda en `sessionStorage`.
+- **Carrito 100 % local.** Contextos separados: el badge de la barra solo mira `cantidadTotal`; `memo` en la tarjeta evita re-pintar toda la grilla en cada +/−.
+- **Consultas:** columnas puntuales, embed de PostgREST (pedido + detalles, sin N+1), paginación `.range()` sin `COUNT(*)` (si la página vino llena, hay más). El resumen admin es una **vista SQL**, no un `reduce` en el cliente.
+- **`getSession()`** al arrancar (JWT local). `getUser()` haría red.
+- **`React.lazy`** + prefetch del chunk **y** de los datos al pasar el mouse por Tienda / Mis pedidos / Administración.
+- **`preconnect`** a Supabase en `index.html`.
+- **Code splitting** con `React.lazy` (Administración y Mis pedidos). Medimos `manualChunks` de React/supabase-js: el gzip del primer load no baja, y forzar un chunk de supabase-js anula el tree-shaking. En Vercel, `/assets/*` se cachea 1 año (`immutable`); `index.html` va con `no-cache`.
+- **Índices** que cubren los filtros reales y políticas con `(SELECT auth.uid())` + `is_admin()` STABLE. Si el proyecto demo ya tenía el esquema de `main`, **volvé a pegar `schema.sql`** (es idempotente) para los índices nuevos.
+
+Para comprobar el code splitting: `npm run build` y mirá `dist/assets`.
 
 ## UI y guía de diseño
 
@@ -222,7 +226,7 @@ La aplicación es un sitio estático de Vite: al ejecutar `npm run build` se gen
 
 ### Por qué existe `vercel.json`
 
-La aplicación usa React Router para mostrar rutas como `/login` y `/admin` en el navegador. Al abrir o recargar directamente una de esas direcciones, Vercel debe servir la aplicación de una sola página en vez de buscar un archivo físico con ese nombre. La regla de `vercel.json` reescribe las solicitudes a `/index.html`, y React Router decide qué pantalla mostrar. `public/_redirects` es la regla equivalente para otros hostings que la admiten; en Vercel se usa `vercel.json`.
+La aplicación usa React Router para mostrar rutas como `/login` y `/admin` en el navegador. Al abrir o recargar directamente una de esas direcciones, Vercel debe servir la aplicación de una sola página en vez de buscar un archivo físico con ese nombre. `vercel.json` reescribe esas solicitudes a `/index.html` y además pone `Cache-Control: public, max-age=31536000, immutable` en `/assets/*` (archivos con hash) y `no-cache` en `index.html` (para que un deploy nuevo no quede pegado). `public/_redirects` es la regla SPA equivalente para otros hostings.
 
 ### Conectar el dominio con Supabase
 

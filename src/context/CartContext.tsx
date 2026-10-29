@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Producto } from '../types';
 
 export interface ItemCarrito {
@@ -10,26 +10,35 @@ export interface ItemCarrito {
   cantidad: number;
 }
 
-interface CartContextType {
-  items: ItemCarrito[];
+interface CartActions {
   agregar: (p: Producto) => void;
   setCantidad: (id: string, cantidad: number) => void;
   quitar: (id: string) => void;
   vaciar: () => void;
+}
+
+interface CartMeta {
   subtotal: number;
   cantidadTotal: number;
 }
 
 const CLAVE = 'carrito-pp2-starter';
-const CartContext = createContext<CartContextType | undefined>(undefined);
+const CartItemsContext = createContext<ItemCarrito[] | undefined>(undefined);
+const CartMetaContext = createContext<CartMeta | undefined>(undefined);
+const CartActionsContext = createContext<CartActions | undefined>(undefined);
 
 function leer(): ItemCarrito[] {
   try { return JSON.parse(localStorage.getItem(CLAVE) ?? '[]'); } catch { return []; }
 }
 
-// Concepto · El carrito es 100 % local: agregar, + y − cambian el estado al toque.
-// No hay fetch. Los precios guardados NO son confiables: al comprar, crear_pedido()
-// los ignora y recalcula con la fila real de productos (stock + precio).
+function exigir<T>(ctx: T | undefined, hook: string): T {
+  if (!ctx) throw new Error(`${hook} debe usarse dentro de un CartProvider`);
+  return ctx;
+}
+
+// Concepto · Tres contextos: las acciones no cambian de identidad, el badge de la
+// barra solo mira cantidadTotal, y la grilla no se entera de cada tecla del stepper
+// si la tarjeta está memorizada (solo re-pinta la que cambió de cantidad).
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ItemCarrito[]>(leer);
 
@@ -39,7 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const limitar = (n: number, stock: number) => Math.max(1, Math.min(n, stock, 100));
 
-  const agregar = (p: Producto) => setItems((prev) => {
+  const agregar = useCallback((p: Producto) => setItems((prev) => {
     const existe = prev.find((i) => i.producto_id === p.id);
     if (existe) {
       return prev.map((i) => i.producto_id === p.id
@@ -50,24 +59,54 @@ export function CartProvider({ children }: { children: ReactNode }) {
       producto_id: p.id, nombre: p.nombre, precio: Number(p.precio),
       stock: p.stock, emoji: p.emoji, cantidad: 1,
     }];
-  });
-  const setCantidad = (id: string, cantidad: number) =>
-    setItems((prev) => prev.map((i) => i.producto_id === id ? { ...i, cantidad: limitar(cantidad, i.stock) } : i));
-  const quitar = (id: string) => setItems((prev) => prev.filter((i) => i.producto_id !== id));
-  const vaciar = () => setItems([]);
+  }), []);
 
-  const subtotal = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
-  const cantidadTotal = items.reduce((s, i) => s + i.cantidad, 0);
+  const setCantidad = useCallback((id: string, cantidad: number) => {
+    setItems((prev) => prev.map((i) => i.producto_id === id ? { ...i, cantidad: limitar(cantidad, i.stock) } : i));
+  }, []);
+
+  const quitar = useCallback((id: string) => {
+    setItems((prev) => prev.filter((i) => i.producto_id !== id));
+  }, []);
+
+  const vaciar = useCallback(() => setItems([]), []);
+
+  const actions = useMemo<CartActions>(
+    () => ({ agregar, setCantidad, quitar, vaciar }),
+    [agregar, setCantidad, quitar, vaciar],
+  );
+
+  const meta = useMemo<CartMeta>(() => ({
+    subtotal: items.reduce((s, i) => s + i.precio * i.cantidad, 0),
+    cantidadTotal: items.reduce((s, i) => s + i.cantidad, 0),
+  }), [items]);
 
   return (
-    <CartContext.Provider value={{ items, agregar, setCantidad, quitar, vaciar, subtotal, cantidadTotal }}>
-      {children}
-    </CartContext.Provider>
+    <CartActionsContext.Provider value={actions}>
+      <CartItemsContext.Provider value={items}>
+        <CartMetaContext.Provider value={meta}>
+          {children}
+        </CartMetaContext.Provider>
+      </CartItemsContext.Provider>
+    </CartActionsContext.Provider>
   );
 }
 
+export function useCartItems() {
+  return exigir(useContext(CartItemsContext), 'useCartItems');
+}
+
+export function useCartMeta() {
+  return exigir(useContext(CartMetaContext), 'useCartMeta');
+}
+
+export function useCartActions() {
+  return exigir(useContext(CartActionsContext), 'useCartActions');
+}
+
 export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart debe usarse dentro de un CartProvider');
-  return ctx;
+  const items = useCartItems();
+  const meta = useCartMeta();
+  const actions = useCartActions();
+  return { items, ...meta, ...actions };
 }

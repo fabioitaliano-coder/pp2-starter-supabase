@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { invalidarTrasCompra } from '../lib/consultas';
 import { dinero } from '../lib/formato';
 
 export function CartPanel() {
@@ -31,6 +32,7 @@ export function CartPanel() {
       setEnviando(false);
       return;
     }
+    invalidarTrasCompra();
     vaciar();
     // Feedback al terminar: Mis pedidos muestra el aviso de compra realizada.
     navigate('/mis-pedidos', { state: { creado: true } });

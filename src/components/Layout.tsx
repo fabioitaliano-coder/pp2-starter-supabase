@@ -1,27 +1,29 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useCart } from '../context/CartContext';
-import { cargarMisPedidos, cargarPanelAdmin } from '../lib/cargarRutas';
+import { useCartMeta } from '../context/CartContext';
+import { prefetchRutaAdmin, prefetchRutaMisPedidos, prefetchRutaTienda } from '../lib/cargarRutas';
 
 export function Layout() {
   const { user, role, signOut } = useAuth();
-  const { cantidadTotal } = useCart();
+  const { cantidadTotal } = useCartMeta();
   return (
     <>
       <header className="barra">
-        <Link to="/" className="marca">PP2 · Starter Supabase</Link>
+        <Link to="/" className="marca" onMouseEnter={prefetchRutaTienda} onFocus={prefetchRutaTienda}>
+          PP2 · Starter Supabase
+        </Link>
         <nav aria-label="Principal">
-          <NavLink to="/" end>Tienda</NavLink>
+          <NavLink to="/" end onMouseEnter={prefetchRutaTienda} onFocus={prefetchRutaTienda}>Tienda</NavLink>
           <NavLink to="/carrito">
             Carrito{cantidadTotal > 0 && <span className="insignia">{cantidadTotal}</span>}
           </NavLink>
           {user && (
-            <NavLink to="/mis-pedidos" onMouseEnter={() => { void cargarMisPedidos(); }} onFocus={() => { void cargarMisPedidos(); }}>
+            <NavLink to="/mis-pedidos" onMouseEnter={prefetchRutaMisPedidos} onFocus={prefetchRutaMisPedidos}>
               Mis pedidos
             </NavLink>
           )}
           {role === 'admin' && (
-            <NavLink to="/admin" onMouseEnter={() => { void cargarPanelAdmin(); }} onFocus={() => { void cargarPanelAdmin(); }}>
+            <NavLink to="/admin" onMouseEnter={prefetchRutaAdmin} onFocus={prefetchRutaAdmin}>
               Administración
             </NavLink>
           )}
