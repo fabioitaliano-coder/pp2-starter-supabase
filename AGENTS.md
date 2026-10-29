@@ -14,7 +14,7 @@ Este archivo explica cómo recorrer y extender el ejemplo. No reemplaza la guía
 
 1. Empezá por el README: creá un proyecto Supabase de prueba, obtené su Project URL y claves *publishable*/*secret*, y completá `.env` sin compartir ni publicar la clave secret.
 2. Ejecutá `supabase/schema.sql` en SQL Editor para instalar el DDL, el trigger y las políticas RLS.
-3. Corré `npm install` y después `npm run seed` para crear las cuentas Auth y pedidos ficticios.
+3. Corré `npm install` y después `npm run seed` para crear las cuentas Auth, el catálogo y pedidos ficticios.
 4. Usá `npm run dev` para probar la aplicación. Iniciá sesión como cliente y como administrador para comparar lo que muestra cada rol.
 5. Antes de dar por terminado un cambio de acceso o datos, ejecutá `npm run test:rls`. Estas pruebas intentan acceder a datos ajenos y modificar permisos.
 6. Consultá la tabla «Qué demuestra» del README para encontrar el archivo relacionado con cada concepto.
@@ -34,8 +34,10 @@ Las herramientas CLI sirven para operar los servicios desde la terminal; no form
 - `src/context/AuthContext.tsx`: consultá el estado de sesión y el rol disponible para los componentes.
 - `design.md`: seguí este esquema antes de solicitar o implementar cualquier trabajo visual.
 - `src/lib/supabase.ts`: reutilizá el cliente compartido para consultas desde la aplicación.
-- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. La autorización de los datos debe vivir en la base.
-- `scripts/seed.mjs`: seed de demostración local. Crea usuarios con Auth Admin API y agrega pedidos de prueba; necesita `SUPABASE_SECRET_KEY`.
+- `src/components/EstadoBadge.tsx`: badge de estado del pedido; reutilizalo en cliente y admin.
+- `src/features/client/Catalogo.tsx`: catálogo, carrito y confirmación del pedido (`crear_pedido`).
+- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. La autorización de los datos debe vivir en la base. El total del pedido y el precio de cada renglón se calculan en la base, no en el cliente.
+- `scripts/seed.mjs`: seed de demostración local. Crea usuarios con Auth Admin API, el catálogo y pedidos con artículos; necesita `SUPABASE_SECRET_KEY`.
 - `scripts/`: ejecutá tareas locales de demostración y pruebas. Solo estos scripts usan la clave `SUPABASE_SECRET_KEY`.
 
 ## Reglas para aprender y modificar con seguridad

@@ -27,11 +27,13 @@ Tipografía: pila del sistema con alternativas sans-serif; no requiere descargar
 ## Componentes y patrones
 
 - **Acción principal:** botón azul sólido; usarlo para enviar formularios o confirmar la acción más importante.
-- **Acción secundaria:** botón blanco con borde; reservar para navegación y acciones de menor prioridad.
+- **Acción secundaria:** botón blanco con borde (`button.secundario`); reservar para navegación, quitar del carrito y acciones de menor prioridad.
 - **Formularios:** etiqueta visible, controles de ancho completo y estado de foco perceptible. No depender del placeholder como etiqueta.
-- **Tarjetas:** superficies blancas con borde fino y sombra discreta; agrupan formularios y resúmenes.
+- **Campos y selects:** `input` y `select` comparten borde, radio, sombra y anillo de foco. El `select` oculta la flecha nativa (`appearance: none`) y usa un chevron propio a la derecha para verse igual en admin y en el resto de la app. En tablas, el select puede ser un poco más angosto (`td select`) pero no pierde el estilo.
+- **Tarjetas:** superficies blancas con borde fino y sombra discreta; agrupan formularios, productos del catálogo y resúmenes.
+- **Catálogo y carrito:** grilla de productos con emoji, precio y stock; carrito compacto (en escritorio, sticky a la derecha) con total visible y una sola acción principal para confirmar.
 - **Tablas:** conservar encabezados claros, separadores discretos y scroll horizontal en pantallas estrechas.
-- **Estados:** pendiente ámbar, confirmado azul, entregado verde y cancelado rojo. No indicar el estado solo con color: conservar también el texto.
+- **Estados:** usar siempre el componente `EstadoBadge`. Pendiente ámbar, confirmado azul, entregado verde y cancelado rojo. No indicar el estado solo con color: conservar también el texto.
 - **Errores y carga:** usar `role="alert"` para errores y `role="status"` para estados de carga; el mensaje debe explicar qué ocurre.
 - **Responsive y accesibilidad:** mantener navegación por teclado, foco visible, contraste suficiente y adaptación a móvil. No eliminar atributos ARIA ni etiquetas existentes al estilizar.
 

@@ -48,7 +48,7 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
    npm run seed
    ```
 
-   Crea un admin, dos clientes y pedidos ficticios. Los usuarios y la contraseña de prueba están en el aula virtual de PP2.
+   Crea un admin, dos clientes, un catálogo de artículos y pedidos ficticios con renglones. Los usuarios y la contraseña de prueba están en el aula virtual de PP2.
 
 7. **Comprobá que RLS protege los datos:**
 
@@ -72,8 +72,11 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | :--- | :--- |
 | Alta de usuario con perfil automático (trigger) | `supabase/schema.sql`, secciones 2 y 3 |
 | El rol **nunca** se toma de lo que manda el cliente | trigger `handle_new_user()` y `RegisterForm.tsx` |
-| RLS por dueño y por rol (`is_admin()`) | `supabase/schema.sql`, sección 6 |
-| Vista SQL que respeta RLS (`security_invoker`) | `supabase/schema.sql`, sección 7 y `PanelAdmin.tsx` |
+| Catálogo, carrito y pedido con renglones | `Catalogo.tsx`, `MisPedidos.tsx`, función `crear_pedido()` |
+| Precio y total calculados en la base (no se confía en el cliente) | triggers en `supabase/schema.sql`, sección 6 |
+| RLS por dueño y por rol (`is_admin()`) | `supabase/schema.sql`, sección 7 |
+| Vista SQL que respeta RLS (`security_invoker`) | `supabase/schema.sql`, sección 8 y `PanelAdmin.tsx` |
+| Badges de estado reutilizados | `EstadoBadge.tsx`, `MisPedidos.tsx`, `PanelAdmin.tsx` |
 | Clave pública frente a clave privada | `.env.example`, `src/lib/supabase.ts`, `scripts/_clientes.mjs` |
 | Cliente singleton, `AuthContext`, rutas protegidas | `src/lib/`, `src/context/`, `src/routes/` |
 | Diseño y estilos con Tailwind CSS | `design.md`, `src/index.css` |
@@ -84,8 +87,8 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 
 Este starter ya incluye las dos piezas necesarias para preparar una base de demostración:
 
-- **DDL y seguridad:** [`supabase/schema.sql`](./supabase/schema.sql) crea el esquema de tablas, tipo de rol, índice, trigger de perfiles, función de autorización, políticas RLS, permisos y vista. Es el esquema fuente de este ejemplo; no hace falta crear otro archivo DDL duplicado.
-- **Seed de demostración:** [`scripts/seed.mjs`](./scripts/seed.mjs), ejecutado con `npm run seed`, crea las cuentas de prueba mediante Supabase Auth Admin API y genera pedidos ficticios. El script es local, no es un seed SQL ni se ejecuta en el navegador.
+- **DDL y seguridad:** [`supabase/schema.sql`](./supabase/schema.sql) crea el esquema de tablas (perfiles, productos, pedidos y renglones), tipo de rol, índices, trigger de perfiles, función `crear_pedido`, triggers que fijan precio/total, políticas RLS, permisos y vista. Es el esquema fuente de este ejemplo; no hace falta crear otro archivo DDL duplicado.
+- **Seed de demostración:** [`scripts/seed.mjs`](./scripts/seed.mjs), ejecutado con `npm run seed`, crea las cuentas de prueba mediante Supabase Auth Admin API, carga un catálogo y genera pedidos ficticios con artículos. El script es local, no es un seed SQL ni se ejecuta en el navegador.
 
 ### Crear el proyecto y conseguir las claves
 
@@ -104,7 +107,7 @@ La clave *publishable* está diseñada para ser pública y **no concede por sí 
 
 En un proyecto Supabase de prueba vacío, seguí este orden:
 
-1. Abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutalo. El archivo puede correrse más de una vez; define las tablas, el trigger que crea automáticamente el perfil y las políticas de seguridad.
+1. Abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutalo. El archivo puede correrse más de una vez; define las tablas (incluye catálogo y renglones de pedido), el trigger que crea automáticamente el perfil, los triggers de precio/total y las políticas de seguridad. Si el proyecto ya tenía el esquema anterior, corré este archivo de nuevo: es idempotente y migra `pedido_detalles`.
 2. En la terminal, instalá las dependencias y creá los datos demo:
 
    ```bash
@@ -112,7 +115,7 @@ En un proyecto Supabase de prueba vacío, seguí este orden:
    npm run seed
    ```
 
-3. El seed crea tres cuentas de prueba confirmadas (un admin y dos clientes) y hasta 60 pedidos ficticios. Los usuarios y la contraseña de la demo están en el [aula virtual de PP2 (Moodle)](https://aulasvirtuales.bue.edu.ar/mod/page/view.php?id=1071759). Asigna el rol admin después de crear su usuario. Podés volver a correrlo para reparar/preparar las cuentas; los pedidos se agregan solamente cuando la tabla todavía está vacía. No uses estas credenciales en producción ni cargues datos reales en este proyecto.
+3. El seed crea tres cuentas de prueba confirmadas (un admin y dos clientes), un catálogo de 8 artículos y pedidos ficticios con renglones. Los usuarios y la contraseña de la demo están en el [aula virtual de PP2 (Moodle)](https://aulasvirtuales.bue.edu.ar/mod/page/view.php?id=1071759). Asigna el rol admin después de crear su usuario. Podés volver a correrlo para reparar/preparar las cuentas y el catálogo; los pedidos se agregan solamente cuando la tabla todavía está vacía. Si ya había pedidos sin artículos, el seed les carga renglones. No uses estas credenciales en producción ni cargues datos reales en este proyecto.
 4. Verificá el aislamiento ejecutando `npm run test:rls` y probá la app con `npm run dev`.
 
 No insertamos usuarios directamente en `auth.users` con SQL: Supabase Auth administra esa tabla y el trigger del esquema crea cada perfil. Por eso el seed usa la Auth Admin API desde un script local con la clave secret, sin exponerla al navegador. Si solo necesitás preparar el esquema, ejecutá el DDL y omití `npm run seed`.

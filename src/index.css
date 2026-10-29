@@ -23,6 +23,7 @@ body {
 
 main { @apply mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8; }
 h1 { @apply mb-6 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl; }
+h2 { @apply m-0 text-lg font-semibold tracking-tight text-slate-950; }
 
 .barra {
   @apply sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-line bg-white/90 px-4 py-4 shadow-sm backdrop-blur-md sm:px-6;
@@ -41,32 +42,75 @@ label { @apply grid gap-2 text-sm font-medium text-slate-700; }
 input, select {
   @apply min-h-11 w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm outline-none transition;
 }
+select {
+  @apply cursor-pointer pr-10;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.7rem center;
+  background-repeat: no-repeat;
+  background-size: 1.1rem;
+}
 input:focus, select:focus { @apply border-brand-600 ring-4 ring-brand-100; }
 button {
   @apply inline-flex min-h-10 items-center justify-center rounded-xl border border-brand-600 bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-brand-700 hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
 }
 button:disabled { @apply cursor-not-allowed opacity-50; }
-.barra button, .paginacion button {
+.barra button, .paginacion button, button.secundario {
   @apply border-line bg-white text-slate-700 shadow-none hover:border-brand-100 hover:bg-brand-50 hover:text-brand-700;
 }
 
 .fila { @apply mb-6 flex flex-wrap items-end gap-4 rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-5; }
+.filtro { @apply mb-4 max-w-xs; }
 .error { @apply rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-danger; }
+.ok { @apply rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800; }
 .centro { @apply mx-auto max-w-2xl px-4 py-12 text-center text-sm text-muted; }
 .tabla-scroll { @apply my-6 overflow-x-auto rounded-2xl border border-line bg-white shadow-sm; }
 table { @apply w-full min-w-max border-collapse text-left text-sm; }
 th { @apply bg-slate-50 px-4 py-3 font-semibold text-slate-600; }
 td { @apply border-t border-line px-4 py-3 text-slate-700; }
 tbody tr { @apply transition hover:bg-slate-50/80; }
-td select { @apply min-h-9 min-w-36; }
+td select { @apply min-h-10 min-w-40; }
+.celda-estado { @apply flex flex-col items-start gap-2; }
 .estado { @apply inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize text-slate-700; }
-.estado.pendiente { @apply bg-amber-50 text-amber-700; }
-.estado.confirmado { @apply bg-blue-50 text-blue-700; }
-.estado.entregado { @apply bg-emerald-50 text-emerald-700; }
-.estado.cancelado { @apply bg-red-50 text-red-700; }
+.estado.pendiente { @apply bg-amber-50 text-amber-800; }
+.estado.confirmado { @apply bg-blue-50 text-blue-800; }
+.estado.entregado { @apply bg-emerald-50 text-emerald-800; }
+.estado.cancelado { @apply bg-red-50 text-red-800; }
 .paginacion { @apply flex flex-wrap items-center justify-between gap-3 text-sm text-muted; }
 .resumen { @apply mb-6 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4; }
 .resumen li { @apply rounded-2xl border border-line bg-white p-4 shadow-sm; }
-.resumen li strong { @apply block text-2xl font-bold tracking-tight text-slate-950; }
+.resumen li strong { @apply mt-2 block text-2xl font-bold tracking-tight text-slate-950; }
 .resumen li small { @apply mt-1 block text-xs text-muted; }
 code { @apply rounded bg-slate-100 px-1.5 py-1 font-mono text-xs text-slate-700; }
+
+.compra { @apply mb-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start; }
+.catalogo { @apply grid gap-4 sm:grid-cols-2; }
+.producto {
+  @apply flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm;
+}
+.producto .emoji { @apply text-3xl leading-none; }
+.producto p { @apply m-0 text-sm leading-6 text-muted; }
+.producto .precio { @apply text-base font-semibold text-slate-950; }
+.producto footer { @apply mt-auto flex flex-wrap items-end gap-3; }
+.producto footer label { @apply w-20; }
+.muted { @apply text-sm text-muted; }
+
+.carrito { @apply rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-24; }
+.carrito ol { @apply m-0 list-none p-0; }
+.carrito-linea {
+  @apply grid gap-1 border-b border-line py-3;
+  grid-template-columns: 1fr auto;
+}
+.carrito-linea:last-of-type { @apply border-b-0; }
+.carrito-total {
+  @apply mt-3 flex items-center justify-between border-t border-line pt-4 text-base font-semibold;
+}
+.carrito form > button[type="submit"] { @apply mt-4 w-full; }
+.carrito .error, .carrito .ok { @apply mt-3; }
+.cantidad { @apply inline-flex items-center gap-1; }
+.cantidad button { @apply min-h-9 w-9 px-0; }
+
+.articulos { @apply m-0 min-w-44 list-none p-0 text-sm; }
+.articulos li { @apply flex flex-wrap justify-between gap-2 py-0.5; }
+.articulos .nombre { @apply text-slate-800; }
+.articulos .importe { @apply font-medium text-slate-700; }

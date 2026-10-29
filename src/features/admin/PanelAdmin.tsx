@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { PaginationControls } from '../../components/PaginationControls';
-import { ESTADOS, type Estado, type Pedido, type ResumenEstado } from '../../types';
+import { EstadoBadge } from '../../components/EstadoBadge';
+import { ListaArticulos } from '../../components/ListaArticulos';
+import { ESTADOS, ESTADO_ETIQUETA, formatoFecha, formatoPesos, type Estado, type Pedido, type ResumenEstado } from '../../types';
 
 const POR_PAGINA = 10;
 
@@ -17,7 +19,9 @@ export function PanelAdmin() {
     const desde = (pagina - 1) * POR_PAGINA;
     let consulta = supabase
       .from('pedidos')
-      .select('*', { count: 'exact' })
+      .select('*, pedido_detalles(id, pedido_id, producto_id, nombre, cantidad, precio_unitario)', {
+        count: 'exact',
+      })
       .order('created_at', { ascending: false })
       .range(desde, desde + POR_PAGINA - 1);
     if (filtro) consulta = consulta.eq('estado', filtro);
@@ -46,33 +50,61 @@ export function PanelAdmin() {
       <h1>Panel de administración</h1>
       <ul className="resumen">
         {resumen.map((r) => (
-          <li key={r.estado}><strong>{r.cantidad}</strong> {r.estado}<small>${Number(r.total).toFixed(2)}</small></li>
+          <li key={r.estado}>
+            <EstadoBadge estado={r.estado} />
+            <strong>{r.cantidad}</strong>
+            <small>{formatoPesos(Number(r.total))}</small>
+          </li>
         ))}
       </ul>
-      <label>Filtrar por estado{' '}
-        <select value={filtro} onChange={(e) => { setPagina(1); setFiltro(e.target.value as '' | Estado); }}>
+      <label className="filtro">
+        Filtrar por estado
+        <select
+          value={filtro}
+          onChange={(e) => { setPagina(1); setFiltro(e.target.value as '' | Estado); }}
+        >
           <option value="">Todos</option>
-          {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {ESTADOS.map((s) => (
+            <option key={s} value={s}>{ESTADO_ETIQUETA[s]}</option>
+          ))}
         </select>
       </label>
       {error && <p role="alert" className="error">{error}</p>}
       <div className="tabla-scroll">
         <table>
-          <thead><tr><th>Fecha</th><th>Cliente (id)</th><th>Total</th><th>Estado</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Cliente (id)</th>
+              <th>Artículos</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
           <tbody>
             {pedidos.map((p) => (
               <tr key={p.id}>
-                <td>{new Date(p.created_at).toLocaleString('es-AR')}</td>
+                <td>{formatoFecha(p.created_at)}</td>
                 <td><code>{p.user_id.slice(0, 8)}</code></td>
-                <td>${Number(p.total).toFixed(2)}</td>
+                <td><ListaArticulos items={p.pedido_detalles} /></td>
+                <td>{formatoPesos(Number(p.total))}</td>
                 <td>
-                  <select aria-label="Estado del pedido" value={p.estado} onChange={(e) => cambiarEstado(p.id, e.target.value as Estado)}>
-                    {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <div className="celda-estado">
+                    <EstadoBadge estado={p.estado} />
+                    <select
+                      aria-label={`Cambiar estado del pedido ${p.id.slice(0, 8)}`}
+                      value={p.estado}
+                      onChange={(e) => cambiarEstado(p.id, e.target.value as Estado)}
+                    >
+                      {ESTADOS.map((s) => (
+                        <option key={s} value={s}>{ESTADO_ETIQUETA[s]}</option>
+                      ))}
+                    </select>
+                  </div>
                 </td>
               </tr>
             ))}
-            {pedidos.length === 0 && <tr><td colSpan={4}>Sin pedidos.</td></tr>}
+            {pedidos.length === 0 && <tr><td colSpan={5}>Sin pedidos.</td></tr>}
           </tbody>
         </table>
       </div>
