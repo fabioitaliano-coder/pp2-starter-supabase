@@ -4,6 +4,68 @@ Aplicación de referencia de Práctica Profesionalizante II · IFTS 16. Muestra 
 
 Datos 100 % ficticios (Ley 25.326). Licencia MIT.
 
+## Primeros pasos (alumnos)
+
+Seguí estos pasos en orden para tener el starter andando en tu computadora con tu propio proyecto de Supabase. Cada paso enlaza a la explicación completa más abajo.
+
+**Antes de empezar necesitás:** [Git](https://git-scm.com/downloads), [Node.js 22](https://nodejs.org/) (es la versión de `.nvmrc`; si usás nvm, corré `nvm use`), una cuenta en [GitHub](https://github.com) y una cuenta gratuita en [Supabase](https://supabase.com).
+
+1. **Hacé tu copia del repositorio.** Para trabajar con tu equipo, tocá **Fork** arriba a la derecha en GitHub y cloná tu fork. Si solo querés probarlo, cloná este directamente:
+
+   ```bash
+   git clone https://github.com/fabioitaliano-coder/pp2-starter-supabase.git
+   cd pp2-starter-supabase
+   ```
+
+2. **Instalá las dependencias:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Creá un proyecto en Supabase** y copiá la Project URL, la clave Publishable y la clave Secret. Ver [Crear el proyecto y conseguir las claves](#crear-el-proyecto-y-conseguir-las-claves).
+
+4. **Configurá el `.env`.** Copiá el archivo de ejemplo y completá los valores:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   | Variable | Qué va | Dónde se usa |
+   | :--- | :--- | :--- |
+   | `VITE_SUPABASE_URL` | Project URL | navegador |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | clave `sb_publishable_…` | navegador |
+   | `SUPABASE_SECRET_KEY` | clave `sb_secret_…` | solo scripts locales (`seed`, `test:rls`) |
+   | `TEST_SIGNUP_EMAIL` | un mail tuyo (opcional) | una de las pruebas RLS |
+
+   El `.env` ya está en `.gitignore`: **nunca lo subas a GitHub** ni pongas la clave secret en Vercel.
+
+5. **Creá las tablas y la seguridad.** En Supabase abrí **SQL Editor → New query**, pegá todo `supabase/schema.sql` y ejecutalo. Ver [Aplicar el DDL y ejecutar el seed](#aplicar-el-ddl-y-ejecutar-el-seed).
+
+6. **Cargá los datos de prueba:**
+
+   ```bash
+   npm run seed
+   ```
+
+   Crea un admin, dos clientes y pedidos ficticios. Los usuarios y la contraseña de prueba están en el aula virtual de PP2.
+
+7. **Comprobá que RLS protege los datos:**
+
+   ```bash
+   npm run test:rls
+   ```
+
+8. **Levantá la app** y entrá con las cuentas de prueba:
+
+   ```bash
+   npm run dev   # http://localhost:5173
+   ```
+
+9. **(Opcional) Publicala en Vercel.** Ver [Despliegue en Vercel](#despliegue-en-vercel).
+
+**Si algo falla:** si la app avisa que faltan variables de Supabase, revisá que el archivo se llame exactamente `.env`, que esté en la raíz del proyecto y reiniciá `npm run dev`. Si `npm run seed` falla, revisá `SUPABASE_SECRET_KEY` y que hayas ejecutado `schema.sql` antes. Dudas: foro de consultas del aula virtual.
+
 ## Qué demuestra
 
 | Tema | Dónde verlo |
