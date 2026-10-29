@@ -41,12 +41,12 @@ await caso('IDOR: cliente1 no puede leer un pedido de cliente2 por id', async ()
   const { data } = await cliente1.from('pedidos').select('id').eq('id', ajeno.id);
   assert.equal(data.length, 0);
 });
-await caso('cliente1 no puede crear un pedido a nombre de cliente2', async () => {
-  const { error } = await cliente1.from('pedidos').insert({ user_id: B, total: 1 });
+await caso('cliente1 no puede insertar un pedido directo (solo crear_pedido)', async () => {
+  const { error } = await cliente1.from('pedidos').insert({ user_id: A, total: 1 });
   assert.ok(error, 'debía fallar');
 });
-await caso('cliente1 no puede crear un pedido ya "entregado"', async () => {
-  const { error } = await cliente1.from('pedidos').insert({ user_id: A, total: 1, estado: 'entregado' });
+await caso('cliente1 no puede crear un pedido a nombre de cliente2', async () => {
+  const { error } = await cliente1.from('pedidos').insert({ user_id: B, total: 1 });
   assert.ok(error, 'debía fallar');
 });
 await caso('cliente1 no puede cambiar el estado de un pedido', async () => {
@@ -102,9 +102,17 @@ await caso('la vista resumen respeta RLS (cliente1 no cuenta pedidos ajenos)', a
   const { count } = await admin.from('pedidos').select('*', { count: 'exact', head: true }).eq('user_id', A);
   assert.equal(suma, count);
 });
-await caso('sin sesión no se ve el catálogo', async () => {
-  const { data } = await anonimo.from('productos').select('id');
-  assert.equal((data ?? []).length, 0);
+await caso('sin sesión se ve el catálogo vigente', async () => {
+  const { data, error } = await anonimo.from('productos').select('id');
+  assert.ifError(error);
+  assert.ok((data ?? []).length > 0);
+});
+await caso('sin sesión no se puede comprar', async () => {
+  const { data: prod } = await anonimo.from('productos').select('id').limit(1).single();
+  const { error } = await anonimo.rpc('crear_pedido', {
+    p_items: [{ producto_id: prod.id, cantidad: 1 }],
+  });
+  assert.ok(error, 'debía fallar');
 });
 await caso('cliente1 ve el catálogo', async () => {
   const { data, error } = await cliente1.from('productos').select('id');
@@ -150,43 +158,22 @@ await caso('cliente1 no puede agregar artículos a un pedido propio ya entregado
   });
   assert.ok(error, 'debía fallar');
 });
-await caso('el precio y el nombre del renglón los pone la base', async () => {
+await caso('crear_pedido arma el pedido y calcula el total (ignora un precio mandado)', async () => {
   const { data: prod, error: eProd } = await cliente1
-    .from('productos').select('id, nombre, precio').gt('stock', 0).limit(1).single();
-  assert.ifError(eProd);
-  const { data: pedido, error: ePed } = await cliente1
-    .from('pedidos').insert({ user_id: A }).select('id, total').single();
-  assert.ifError(ePed);
-  assert.equal(Number(pedido.total), 0);
-  const { error: eDet } = await cliente1.from('pedido_detalles').insert({
-    pedido_id: pedido.id,
-    producto_id: prod.id,
-    cantidad: 1,
-    precio_unitario: 0.01,
-    nombre: 'hackeado',
-  });
-  assert.ifError(eDet);
-  const { data: det } = await admin.from('pedido_detalles')
-    .select('nombre, precio_unitario').eq('pedido_id', pedido.id).single();
-  assert.equal(det.nombre, prod.nombre);
-  assert.equal(Number(det.precio_unitario), Number(prod.precio));
-  const { data: ped } = await admin.from('pedidos').select('total').eq('id', pedido.id).single();
-  assert.equal(Number(ped.total), Number(prod.precio));
-  await admin.from('pedido_detalles').delete().eq('pedido_id', pedido.id);
-  await admin.from('pedidos').delete().eq('id', pedido.id);
-});
-await caso('crear_pedido arma el pedido y calcula el total', async () => {
-  const { data: prod, error: eProd } = await cliente1
-    .from('productos').select('id, precio').gt('stock', 1).limit(1).single();
+    .from('productos').select('id, nombre, precio').gt('stock', 1).limit(1).single();
   assert.ifError(eProd);
   const { data, error } = await cliente1.rpc('crear_pedido', {
-    p_items: [{ producto_id: prod.id, cantidad: 2 }],
+    p_items: [{ producto_id: prod.id, cantidad: 2, precio_unitario: 0.01, producto_nombre: 'hackeado' }],
   });
   assert.ifError(error);
   const { data: ped } = await admin.from('pedidos').select('user_id, total, estado').eq('id', data).single();
   assert.equal(ped.user_id, A);
   assert.equal(ped.estado, 'pendiente');
   assert.equal(Number(ped.total), Number(prod.precio) * 2);
+  const { data: det } = await admin.from('pedido_detalles')
+    .select('producto_nombre, precio_unitario').eq('pedido_id', data).single();
+  assert.equal(det.producto_nombre, prod.nombre);
+  assert.equal(Number(det.precio_unitario), Number(prod.precio));
   await admin.from('pedido_detalles').delete().eq('pedido_id', data);
   await admin.from('pedidos').delete().eq('id', data);
 });

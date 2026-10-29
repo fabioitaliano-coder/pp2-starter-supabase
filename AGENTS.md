@@ -5,10 +5,10 @@ Este archivo explica cómo recorrer y extender el ejemplo. No reemplaza la guía
 ## Instrucciones obligatorias para cambios de interfaz
 
 - Antes de crear o modificar pantallas, estilos, componentes visuales o dependencias de UI, leé [`design.md`](./design.md) y usalo como referencia de diseño y accesibilidad.
-- La UI usa Tailwind CSS v4 con tokens manuales en `src/index.css`. No generes ni regeneres paletas o tokens automáticamente.
+- La UI comparte el sistema visual de la app de referencia (CSS plano y variables en `src/index.css`). No uses Tailwind ni generes paletas automáticamente.
 - No agregues shadcn/ui ni otra biblioteca visual sin que el usuario lo solicite expresamente.
-- Si un cambio necesita un token compartido nuevo, documentá su valor y propósito en `design.md` y definilo manualmente en `src/index.css` en el mismo cambio.
-- Conservá etiquetas, foco visible, navegación por teclado, mensajes de estado y adaptación móvil.
+- Si un cambio necesita un token compartido nuevo, documentá su valor y propósito en `design.md` y definilo en `:root` de `src/index.css` en el mismo cambio.
+- Conservá etiquetas, foco visible, navegación por teclado, mensajes de estado y adaptación móvil. El carrito al costado (escritorio) y la barra inferior (celular) son parte del patrón.
 
 ## Cómo usar este proyecto
 
@@ -34,9 +34,10 @@ Las herramientas CLI sirven para operar los servicios desde la terminal; no form
 - `src/context/AuthContext.tsx`: consultá el estado de sesión y el rol disponible para los componentes.
 - `design.md`: seguí este esquema antes de solicitar o implementar cualquier trabajo visual.
 - `src/lib/supabase.ts`: reutilizá el cliente compartido para consultas desde la aplicación.
+- `src/components/CartPanel.tsx` y `src/context/CartContext.tsx`: el mismo panel de carrito en la tienda y en `/carrito`.
 - `src/components/EstadoBadge.tsx`: badge de estado del pedido; reutilizalo en cliente y admin.
-- `src/features/client/Catalogo.tsx`: catálogo, carrito y confirmación del pedido (`crear_pedido`).
-- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. La autorización de los datos debe vivir en la base. El total del pedido y el precio de cada renglón se calculan en la base, no en el cliente.
+- `src/features/tienda/Tienda.tsx`: catálogo público y carrito lateral.
+- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. `crear_pedido()` calcula precio, stock y total en la base con `FOR UPDATE`.
 - `scripts/seed.mjs`: seed de demostración local. Crea usuarios con Auth Admin API, el catálogo y pedidos con artículos; necesita `SUPABASE_SECRET_KEY`.
 - `scripts/`: ejecutá tareas locales de demostración y pruebas. Solo estos scripts usan la clave `SUPABASE_SECRET_KEY`.
 

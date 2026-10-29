@@ -1,20 +1,21 @@
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 
 export function LoginForm() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const destino = (useLocation().state as { from?: string } | null)?.from ?? '/';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  if (user && role) return <Navigate to={role === 'admin' ? '/admin' : '/cliente'} replace />;
+  if (user) return <Navigate to={destino} replace />;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (enviando) return; // evita el doble submit
+    if (enviando) return;
     setEnviando(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -23,7 +24,7 @@ export function LoginForm() {
   };
 
   return (
-    <form className="tarjeta" onSubmit={onSubmit}>
+    <form className="tarjeta formulario" onSubmit={onSubmit}>
       <h1>Ingresar</h1>
       <label>Email <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
       <label>Contraseña <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" /></label>

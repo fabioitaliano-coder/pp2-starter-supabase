@@ -28,13 +28,13 @@ export function RegisterForm() {
   };
 
   return (
-    <form className="tarjeta" onSubmit={onSubmit}>
+    <form className="tarjeta formulario" onSubmit={onSubmit}>
       <h1>Crear cuenta</h1>
       <label>Nombre <input value={nombre} onChange={(e) => setNombre(e.target.value)} required /></label>
       <label>Email <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>
       <label>Contraseña (mínimo 8) <input type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" /></label>
       {error && <p role="alert" className="error">{error}</p>}
-      {aviso && <p role="status">{aviso}</p>}
+      {aviso && <p role="status" className="exito">{aviso}</p>}
       <button type="submit" disabled={enviando}>{enviando ? 'Creando…' : 'Registrarme'}</button>
       <p>¿Ya tenés cuenta? <Link to="/login">Ingresá</Link></p>
     </form>

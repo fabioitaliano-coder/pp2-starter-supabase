@@ -84,22 +84,37 @@ if (errorCatalogo) throw errorCatalogo;
 
 const { data: productos, error: errorProductos } = await admin
   .from('productos')
-  .select('id')
+  .select('id, nombre, precio')
   .order('nombre');
 if (errorProductos) throw errorProductos;
 if (!productos?.length) throw new Error('El catálogo quedó vacío después del seed.');
 
 async function cargarDetalles(pedidos) {
-  const detalles = pedidos.flatMap((pedido, i) => {
+  const detalles = [];
+  const totales = [];
+  for (const [i, pedido] of pedidos.entries()) {
     const nItems = 1 + (i % 3);
-    return Array.from({ length: nItems }, (_, j) => ({
-      pedido_id: pedido.id,
-      producto_id: productos[(i + j) % productos.length].id,
-      cantidad: 1 + (j % 2),
-    }));
-  });
+    let total = 0;
+    for (let j = 0; j < nItems; j += 1) {
+      const prod = productos[(i + j) % productos.length];
+      const cantidad = 1 + (j % 2);
+      detalles.push({
+        pedido_id: pedido.id,
+        producto_id: prod.id,
+        producto_nombre: prod.nombre,
+        cantidad,
+        precio_unitario: prod.precio,
+      });
+      total += Number(prod.precio) * cantidad;
+    }
+    totales.push({ id: pedido.id, total });
+  }
   const { error } = await admin.from('pedido_detalles').insert(detalles);
   if (error) throw error;
+  for (const fila of totales) {
+    const { error: errorTotal } = await admin.from('pedidos').update({ total: fila.total }).eq('id', fila.id);
+    if (errorTotal) throw errorTotal;
+  }
 }
 
 const { count: nPedidos } = await admin.from('pedidos').select('*', { count: 'exact', head: true });
@@ -117,7 +132,6 @@ if (!nPedidos) {
   if (error) throw error;
   await cargarDetalles(creados);
 } else if (!nDetalles) {
-  // Demo previa: había pedidos sin renglones. Les cargamos artículos y el trigger recalcula el total.
   const { data: existentes, error } = await admin.from('pedidos').select('id').order('created_at', { ascending: false });
   if (error) throw error;
   await cargarDetalles(existentes);

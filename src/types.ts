@@ -23,7 +23,7 @@ export interface PedidoDetalle {
   id: string;
   pedido_id: string;
   producto_id: string | null;
-  nombre: string;
+  producto_nombre: string;
   cantidad: number;
   precio_unitario: number;
 }
@@ -35,18 +35,11 @@ export interface Pedido {
   estado: Estado;
   created_at: string;
   pedido_detalles?: PedidoDetalle[];
+  profiles?: { email: string | null; full_name: string } | null;
 }
 
 export interface ResumenEstado {
   estado: Estado;
   cantidad: number;
   total: number;
-}
-
-export function formatoPesos(valor: number): string {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
-}
-
-export function formatoFecha(iso: string): string {
-  return new Date(iso).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
 }

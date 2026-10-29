@@ -1,16 +1,16 @@
-import { formatoPesos, type PedidoDetalle } from '../types';
+import { dinero } from '../lib/formato';
+import type { PedidoDetalle } from '../types';
 
 export function ListaArticulos({ items }: { items: PedidoDetalle[] | undefined }) {
   if (!items || items.length === 0) {
-    return <span className="muted">Sin artículos</span>;
+    return <span className="nota">Sin artículos</span>;
   }
 
   return (
-    <ul className="articulos">
+    <ul className="detalle">
       {items.map((item) => (
         <li key={item.id}>
-          <span className="nombre">{item.nombre} × {item.cantidad}</span>
-          <span className="importe">{formatoPesos(Number(item.precio_unitario) * item.cantidad)}</span>
+          {item.cantidad} × {item.producto_nombre} — {dinero(item.precio_unitario)} c/u
         </li>
       ))}
     </ul>
