@@ -71,7 +71,10 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
              CHECK (estado IN ('pendiente', 'confirmado', 'entregado', 'cancelado')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Concepto · Índice en la FK que mira RLS ("mis pedidos" filtra por user_id).
+-- Sin él, cada SELECT del cliente barre toda la tabla de pedidos.
 CREATE INDEX IF NOT EXISTS pedidos_user_id_idx ON public.pedidos (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS pedidos_estado_idx ON public.pedidos (estado);
 ALTER TABLE public.pedidos ALTER COLUMN total SET DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.pedido_detalles (
@@ -118,7 +121,10 @@ BEGIN
   END IF;
 END $$;
 
+-- Concepto · pedido_id es la FK de la política detalles_select (EXISTS sobre pedidos).
+-- producto_id cubre el JOIN / SET NULL al borrar un artículo.
 CREATE INDEX IF NOT EXISTS pedido_detalles_pedido_id_idx ON public.pedido_detalles (pedido_id);
+CREATE INDEX IF NOT EXISTS pedido_detalles_producto_id_idx ON public.pedido_detalles (producto_id);
 
 -- 5. HELPER is_admin() ------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_admin()
@@ -128,6 +134,7 @@ SECURITY DEFINER
 STABLE
 SET search_path = public
 AS $$
+  -- (SELECT auth.uid()) = una lectura del uid por llamada, no por fila.
   SELECT EXISTS (
     SELECT 1 FROM public.profiles WHERE id = (SELECT auth.uid()) AND role = 'admin'
   );
@@ -211,6 +218,8 @@ REVOKE EXECUTE ON FUNCTION public.crear_pedido(jsonb) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION public.crear_pedido(jsonb) TO authenticated;
 
 -- 7. RLS -------------------------------------------------------------------------
+-- Concepto · (SELECT auth.uid()) se evalúa una vez por consulta (initPlan de Postgres).
+-- auth.uid() suelto se reevalúa en cada fila y sale más caro cuando RLS filtra muchas filas.
 ALTER TABLE public.profiles        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.productos       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pedidos         ENABLE ROW LEVEL SECURITY;

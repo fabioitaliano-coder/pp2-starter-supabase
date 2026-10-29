@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { cargarMisPedidos, cargarPanelAdmin } from '../lib/cargarRutas';
 
 export function Layout() {
   const { user, role, signOut } = useAuth();
@@ -14,8 +15,16 @@ export function Layout() {
           <NavLink to="/carrito">
             Carrito{cantidadTotal > 0 && <span className="insignia">{cantidadTotal}</span>}
           </NavLink>
-          {user && <NavLink to="/mis-pedidos">Mis pedidos</NavLink>}
-          {role === 'admin' && <NavLink to="/admin">Administración</NavLink>}
+          {user && (
+            <NavLink to="/mis-pedidos" onMouseEnter={() => { void cargarMisPedidos(); }} onFocus={() => { void cargarMisPedidos(); }}>
+              Mis pedidos
+            </NavLink>
+          )}
+          {role === 'admin' && (
+            <NavLink to="/admin" onMouseEnter={() => { void cargarPanelAdmin(); }} onFocus={() => { void cargarPanelAdmin(); }}>
+              Administración
+            </NavLink>
+          )}
         </nav>
         <div className="sesion">
           {user ? (

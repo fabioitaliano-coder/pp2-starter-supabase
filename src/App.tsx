@@ -8,13 +8,12 @@ import { LoginForm } from './features/auth/LoginForm';
 import { RegisterForm } from './features/auth/RegisterForm';
 import { Tienda } from './features/tienda/Tienda';
 import { Carrito } from './features/tienda/Carrito';
+import { cargarMisPedidos, cargarPanelAdmin } from './lib/cargarRutas';
 
-const MisPedidos = lazy(() =>
-  import('./features/client/MisPedidos').then((module) => ({ default: module.MisPedidos })),
-);
-const PanelAdmin = lazy(() =>
-  import('./features/admin/PanelAdmin').then((module) => ({ default: module.PanelAdmin })),
-);
+// Concepto · React.lazy: Administración (y Mis pedidos) no viajan en el JS inicial.
+// El chunk se baja al entrar a la ruta, o antes si el Layout hace prefetch al pasar el mouse.
+const MisPedidos = lazy(cargarMisPedidos);
+const PanelAdmin = lazy(cargarPanelAdmin);
 
 export default function App() {
   return (

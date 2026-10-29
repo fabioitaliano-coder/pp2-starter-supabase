@@ -27,9 +27,9 @@ function leer(): ItemCarrito[] {
   try { return JSON.parse(localStorage.getItem(CLAVE) ?? '[]'); } catch { return []; }
 }
 
-// Concepto · El carrito vive en el navegador y sirve solo para mostrar.
-// Los precios que guarda NO son confiables: al comprar, crear_pedido() los ignora
-// y recalcula todo con los datos reales de la base.
+// Concepto · El carrito es 100 % local: agregar, + y − cambian el estado al toque.
+// No hay fetch. Los precios guardados NO son confiables: al comprar, crear_pedido()
+// los ignora y recalcula con la fila real de productos (stock + precio).
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ItemCarrito[]>(leer);
 

@@ -83,6 +83,7 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | Cliente singleton, `AuthContext`, rutas protegidas | `src/lib/`, `src/context/`, `src/routes/` |
 | Diseño (mismas clases que la app de referencia) | `design.md`, `src/index.css` |
 | Paginación con `.range()` y `count: 'exact'` | `MisPedidos.tsx`, `PanelAdmin.tsx` |
+| Esqueletos, caché del catálogo, UI optimista | `Esqueleto.tsx`, `catalogoCache.ts`, `PanelAdmin.tsx`, `CartPanel.tsx` |
 | Pruebas que intentan romper la seguridad | `scripts/test-rls.mjs` |
 
 ## Supabase: crear el proyecto, conectar credenciales y preparar datos
@@ -109,7 +110,7 @@ La clave *publishable* está diseñada para ser pública y **no concede por sí 
 
 En un proyecto Supabase de prueba vacío, seguí este orden:
 
-1. Abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutalo. El archivo puede correrse más de una vez; define las tablas, el trigger de perfil, `crear_pedido()` y las políticas de seguridad. Si el proyecto ya tenía el esquema anterior, corré este archivo de nuevo: es idempotente y migra `pedido_detalles` (columna `producto_nombre`).
+1. Abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutalo. El archivo puede correrse más de una vez; define las tablas, el trigger de perfil, `crear_pedido()`, índices, políticas RLS y `(SELECT auth.uid())`. Si el proyecto ya tenía el esquema anterior, corré este archivo de nuevo: es idempotente y migra `pedido_detalles` (columna `producto_nombre`) y agrega índices que falten.
 2. En la terminal, instalá las dependencias y creá los datos demo:
 
    ```bash
@@ -122,14 +123,23 @@ En un proyecto Supabase de prueba vacío, seguí este orden:
 
 No insertamos usuarios directamente en `auth.users` con SQL: Supabase Auth administra esa tabla y el trigger del esquema crea cada perfil. Por eso el seed usa la Auth Admin API desde un script local con la clave secret, sin exponerla al navegador. Si solo necesitás preparar el esquema, ejecutá el DDL y omití `npm run seed`.
 
-## Rendimiento y carga
+## Rendimiento y carga (percepción de velocidad)
 
-- Las pantallas de pedidos y administración se cargan bajo demanda con `React.lazy`; el JavaScript inicial no necesita descargar ambas antes de mostrar el ingreso.
-- `AuthContext` conserva el rol en memoria por 60 segundos para evitar repetir la consulta del perfil ante eventos cercanos de renovación de sesión. El valor no se guarda en `localStorage`; al expirar se vuelve a consultar y los errores se muestran en pantalla.
-- Este caché de rol solo evita trabajo repetido en la interfaz: no concede acceso a los datos. Las políticas RLS de Supabase siguen autorizando cada consulta y escritura.
-- La paginación limita las filas solicitadas por pantalla. Para tablas grandes, revisar consultas, índices y políticas con datos representativos; no aumentar el tamaño de página como sustituto de medir.
+El starter prioriza que la app *se sienta* rápida, con técnicas chicas y comentadas en el código. No usa React Query.
 
-Para comprobar la optimización, ejecutá `npm run build` y compará los archivos de `dist/assets`: las vistas cliente y admin deben aparecer como chunks separados. En producción, usá las herramientas de red del navegador para distinguir descarga de JavaScript, verificación de sesión y tiempo de respuesta de Supabase; son etapas distintas y conviene medirlas por separado.
+- **Esqueletos** en catálogo, Mis pedidos y Administración (`Esqueleto.tsx`) en lugar de una pantalla en blanco con «Cargando…».
+- **Carrito 100 % local:** `agregar`, `+` y `−` actualizan React al toque. El único momento de red es «Confirmar compra» (`crear_pedido`).
+- **Caché del catálogo (stale-while-revalidate):** al volver a la Tienda se muestra lo último conocido (memoria + `sessionStorage`) y se refresca en segundo plano (`catalogoCache.ts`).
+- **Cambio de estado optimista** en admin: el badge cambia al instante y se revierte con un mensaje si el `UPDATE` falla.
+- **Confirmar compra** deshabilita el botón, muestra un spinner («Enviando…») y, si sale bien, redirige a Mis pedidos con un aviso de éxito.
+- **Sin cascadas:** el panel admin pide lista y resumen con `Promise.all`; las consultas listan solo las columnas que pinta la UI.
+- **`getSession()` al arrancar** en `AuthContext`: lee el JWT local. `getUser()` haría un round-trip a Auth y retrasaría la barra.
+- **`React.lazy`** para Administración y Mis pedidos; el Layout pide el chunk al pasar el mouse o al enfocar el enlace.
+- **`preconnect`** al Project URL de Supabase en `index.html` (Vite reemplaza `%VITE_SUPABASE_URL%` al compilar; si corrés `npm run build` sin `.env` verás un aviso y el `href` queda vacío).
+- **Índices** en las FK que usan las políticas RLS y **`(SELECT auth.uid())`** en vez de `auth.uid()` suelto: Postgres evalúa el uid una vez por consulta. Ver comentarios en `supabase/schema.sql`. Si el proyecto demo ya tenía el esquema, **volvé a pegar y ejecutar `schema.sql`** (es idempotente).
+- `AuthContext` conserva el rol en memoria por 60 segundos. El valor no se guarda en `localStorage`; no concede acceso: RLS sigue autorizando cada consulta.
+
+Para comprobar el code splitting, ejecutá `npm run build` y mirá `dist/assets`: Mis pedidos y Administración deben aparecer como chunks separados. En producción, usá las herramientas de red del navegador para distinguir descarga de JavaScript, handshake TLS, sesión local y tiempo de respuesta de Supabase.
 
 ## UI y guía de diseño
 

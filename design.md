@@ -36,7 +36,7 @@ Tipografía: pila del sistema. Foco: anillo azul semitransparente (`outline` 3px
 - **Estados:** siempre `EstadoBadge` (`.estado`). Pendiente ámbar, confirmado azul, entregado verde, cancelado rojo. No indicar el estado solo con color.
 - **Tablas:** encabezado `#f1f5f9`, scroll horizontal, detalle expandable.
 - **Formularios:** `.tarjeta.formulario`, etiqueta visible, no depender del placeholder.
-- **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos de catálogo mientras carga.
+- **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos (`.esqueleto`) en catálogo, tablas de pedidos y resumen admin. Spinner `.giro` en «Confirmar compra» mientras corre el RPC.
 - **Responsive:** dos columnas de productos bajo 640px; nav de la barra en una fila con scroll; ocultar el email en celular.
 
 ## Cómo aplicar cambios

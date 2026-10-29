@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PP2 · Starter Supabase</title>
+    <!-- Concepto · preconnect: el navegador abre TLS con Supabase mientras baja el JS.
+         Vite reemplaza %VITE_SUPABASE_URL% al compilar (hace falta .env o variables en el hosting). -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <link rel="dns-prefetch" href="%VITE_SUPABASE_URL%" />
   </head>
   <body>
     <div id="root"></div>
