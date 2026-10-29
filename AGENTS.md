@@ -5,16 +5,16 @@ Este archivo explica cómo recorrer y extender el ejemplo. No reemplaza la guía
 ## Instrucciones obligatorias para cambios de interfaz
 
 - Antes de crear o modificar pantallas, estilos, componentes visuales o dependencias de UI, leé [`design.md`](./design.md) y usalo como referencia de diseño y accesibilidad.
-- La UI usa Tailwind CSS v4 con tokens manuales en `src/index.css`. No generes ni regeneres paletas o tokens automáticamente.
+- La UI comparte el sistema visual de la app de referencia (CSS plano y variables en `src/index.css`). No uses Tailwind ni generes paletas automáticamente.
 - No agregues shadcn/ui ni otra biblioteca visual sin que el usuario lo solicite expresamente.
-- Si un cambio necesita un token compartido nuevo, documentá su valor y propósito en `design.md` y definilo manualmente en `src/index.css` en el mismo cambio.
-- Conservá etiquetas, foco visible, navegación por teclado, mensajes de estado y adaptación móvil.
+- Si un cambio necesita un token compartido nuevo, documentá su valor y propósito en `design.md` y definilo en `:root` de `src/index.css` en el mismo cambio.
+- Conservá etiquetas, foco visible, navegación por teclado, mensajes de estado y adaptación móvil. El carrito al costado (escritorio) y la barra inferior (celular) son parte del patrón.
 
 ## Cómo usar este proyecto
 
 1. Empezá por el README: creá un proyecto Supabase de prueba, obtené su Project URL y claves *publishable*/*secret*, y completá `.env` sin compartir ni publicar la clave secret.
 2. Ejecutá `supabase/schema.sql` en SQL Editor para instalar el DDL, el trigger y las políticas RLS.
-3. Corré `npm install` y después `npm run seed` para crear las cuentas Auth y pedidos ficticios.
+3. Corré `npm install` y después `npm run seed` para crear las cuentas Auth, el catálogo y pedidos ficticios.
 4. Usá `npm run dev` para probar la aplicación. Iniciá sesión como cliente y como administrador para comparar lo que muestra cada rol.
 5. Antes de dar por terminado un cambio de acceso o datos, ejecutá `npm run test:rls`. Estas pruebas intentan acceder a datos ajenos y modificar permisos.
 6. Consultá la tabla «Qué demuestra» del README para encontrar el archivo relacionado con cada concepto.
@@ -34,8 +34,11 @@ Las herramientas CLI sirven para operar los servicios desde la terminal; no form
 - `src/context/AuthContext.tsx`: consultá el estado de sesión y el rol disponible para los componentes.
 - `design.md`: seguí este esquema antes de solicitar o implementar cualquier trabajo visual.
 - `src/lib/supabase.ts`: reutilizá el cliente compartido para consultas desde la aplicación.
-- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. La autorización de los datos debe vivir en la base.
-- `scripts/seed.mjs`: seed de demostración local. Crea usuarios con Auth Admin API y agrega pedidos de prueba; necesita `SUPABASE_SECRET_KEY`.
+- `src/components/CartPanel.tsx` y `src/context/CartContext.tsx`: el mismo panel de carrito en la tienda y en `/carrito`.
+- `src/components/EstadoBadge.tsx`: badge de estado del pedido; reutilizalo en cliente y admin.
+- `src/features/tienda/Tienda.tsx`: catálogo público y carrito lateral.
+- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. `crear_pedido()` calcula precio, stock y total en la base con `FOR UPDATE`.
+- `scripts/seed.mjs`: seed de demostración local. Crea usuarios con Auth Admin API, el catálogo y pedidos con artículos; necesita `SUPABASE_SECRET_KEY`.
 - `scripts/`: ejecutá tareas locales de demostración y pruebas. Solo estos scripts usan la clave `SUPABASE_SECRET_KEY`.
 
 ## Reglas para aprender y modificar con seguridad

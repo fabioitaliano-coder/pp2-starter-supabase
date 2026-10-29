@@ -41,12 +41,12 @@ await caso('IDOR: cliente1 no puede leer un pedido de cliente2 por id', async ()
   const { data } = await cliente1.from('pedidos').select('id').eq('id', ajeno.id);
   assert.equal(data.length, 0);
 });
-await caso('cliente1 no puede crear un pedido a nombre de cliente2', async () => {
-  const { error } = await cliente1.from('pedidos').insert({ user_id: B, total: 1 });
+await caso('cliente1 no puede insertar un pedido directo (solo crear_pedido)', async () => {
+  const { error } = await cliente1.from('pedidos').insert({ user_id: A, total: 1 });
   assert.ok(error, 'debía fallar');
 });
-await caso('cliente1 no puede crear un pedido ya "entregado"', async () => {
-  const { error } = await cliente1.from('pedidos').insert({ user_id: A, total: 1, estado: 'entregado' });
+await caso('cliente1 no puede crear un pedido a nombre de cliente2', async () => {
+  const { error } = await cliente1.from('pedidos').insert({ user_id: B, total: 1 });
   assert.ok(error, 'debía fallar');
 });
 await caso('cliente1 no puede cambiar el estado de un pedido', async () => {
@@ -101,6 +101,81 @@ await caso('la vista resumen respeta RLS (cliente1 no cuenta pedidos ajenos)', a
   const suma = data.reduce((n, r) => n + r.cantidad, 0);
   const { count } = await admin.from('pedidos').select('*', { count: 'exact', head: true }).eq('user_id', A);
   assert.equal(suma, count);
+});
+await caso('sin sesión se ve el catálogo vigente', async () => {
+  const { data, error } = await anonimo.from('productos').select('id');
+  assert.ifError(error);
+  assert.ok((data ?? []).length > 0);
+});
+await caso('sin sesión no se puede comprar', async () => {
+  const { data: prod } = await anonimo.from('productos').select('id').limit(1).single();
+  const { error } = await anonimo.rpc('crear_pedido', {
+    p_items: [{ producto_id: prod.id, cantidad: 1 }],
+  });
+  assert.ok(error, 'debía fallar');
+});
+await caso('cliente1 ve el catálogo', async () => {
+  const { data, error } = await cliente1.from('productos').select('id');
+  assert.ifError(error);
+  assert.ok(data.length > 0);
+});
+await caso('cliente1 no puede crear un producto', async () => {
+  const { error } = await cliente1.from('productos').insert({
+    nombre: `intruso-${Date.now()}`, precio: 1, stock: 1,
+  });
+  assert.ok(error, 'debía fallar');
+});
+await caso('cliente1 no puede cambiar el precio de un producto', async () => {
+  const { data: prod } = await cliente1.from('productos').select('id, precio').limit(1).single();
+  await cliente1.from('productos').update({ precio: 1 }).eq('id', prod.id);
+  const { data: despues } = await admin.from('productos').select('precio').eq('id', prod.id).single();
+  assert.equal(Number(despues.precio), Number(prod.precio));
+});
+await caso('el admin puede actualizar un producto', async () => {
+  const { data: prod } = await adminSes.from('productos').select('id, stock').limit(1).single();
+  const { error } = await adminSes.from('productos').update({ stock: prod.stock }).eq('id', prod.id);
+  assert.ifError(error);
+});
+await caso('IDOR: cliente1 no ve renglones de un pedido de cliente2', async () => {
+  const { data: ajeno } = await admin.from('pedidos').select('id').eq('user_id', B).limit(1).single();
+  const { data } = await cliente1.from('pedido_detalles').select('id').eq('pedido_id', ajeno.id);
+  assert.equal(data.length, 0);
+});
+await caso('cliente1 no puede agregar artículos al pedido de cliente2', async () => {
+  const { data: prod } = await cliente1.from('productos').select('id').limit(1).single();
+  const { data: ajeno } = await admin.from('pedidos').select('id').eq('user_id', B).limit(1).single();
+  const { error } = await cliente1.from('pedido_detalles').insert({
+    pedido_id: ajeno.id, producto_id: prod.id, cantidad: 1,
+  });
+  assert.ok(error, 'debía fallar');
+});
+await caso('cliente1 no puede agregar artículos a un pedido propio ya entregado', async () => {
+  const { data: prod } = await cliente1.from('productos').select('id').gt('stock', 0).limit(1).single();
+  const { data: mio } = await admin.from('pedidos').select('id').eq('user_id', A).eq('estado', 'entregado').limit(1).single();
+  assert.ok(mio, 'hace falta un pedido entregado de cliente1 (corré npm run seed)');
+  const { error } = await cliente1.from('pedido_detalles').insert({
+    pedido_id: mio.id, producto_id: prod.id, cantidad: 1,
+  });
+  assert.ok(error, 'debía fallar');
+});
+await caso('crear_pedido arma el pedido y calcula el total (ignora un precio mandado)', async () => {
+  const { data: prod, error: eProd } = await cliente1
+    .from('productos').select('id, nombre, precio').gt('stock', 1).limit(1).single();
+  assert.ifError(eProd);
+  const { data, error } = await cliente1.rpc('crear_pedido', {
+    p_items: [{ producto_id: prod.id, cantidad: 2, precio_unitario: 0.01, producto_nombre: 'hackeado' }],
+  });
+  assert.ifError(error);
+  const { data: ped } = await admin.from('pedidos').select('user_id, total, estado').eq('id', data).single();
+  assert.equal(ped.user_id, A);
+  assert.equal(ped.estado, 'pendiente');
+  assert.equal(Number(ped.total), Number(prod.precio) * 2);
+  const { data: det } = await admin.from('pedido_detalles')
+    .select('producto_nombre, precio_unitario').eq('pedido_id', data).single();
+  assert.equal(det.producto_nombre, prod.nombre);
+  assert.equal(Number(det.precio_unitario), Number(prod.precio));
+  await admin.from('pedido_detalles').delete().eq('pedido_id', data);
+  await admin.from('pedidos').delete().eq('id', data);
 });
 
 console.log(fallos ? `\n${fallos} prueba(s) fallaron.` : '\nTodas las pruebas pasaron.');
