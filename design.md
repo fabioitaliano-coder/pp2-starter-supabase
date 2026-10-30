@@ -31,12 +31,12 @@ Tipografía: pila del sistema. Foco: anillo azul semitransparente (`outline` 3px
 - **Acción secundaria:** `button.secundario` (blanco, texto azul). `peligro` para vaciar/quitar.
 - **Campos y selects:** misma altura, radio y foco. El `select` oculta la flecha nativa y usa un chevron propio.
 - **Catálogo:** `.tienda-layout` (productos + `.carrito-lateral` sticky desde 1000px). En angosto, `.barra-carrito` fija abajo.
-- **Tarjeta de producto:** `.tarjeta.producto` con ilustración emoji (`.ilustracion` 4:3), insignia de stock, título, descripción, precio y botón al pie.
+- **Tarjeta de producto:** `.tarjeta.producto` con ilustración emoji. `.marco` reserva `aspect-ratio: 4 / 3` para que el emoji no provoque layout shift. Insignia de stock, título, descripción, precio y botón al pie.
 - **CartPanel:** el mismo panel al costado de la tienda y en `/carrito`. Stepper de cantidad, totales y nota de que el importe lo calcula el servidor.
 - **Estados:** siempre `EstadoBadge` (`.estado`). Pendiente ámbar, confirmado azul, entregado verde, cancelado rojo. No indicar el estado solo con color.
 - **Tablas:** encabezado `#f1f5f9`, scroll horizontal, detalle expandable.
 - **Formularios:** `.tarjeta.formulario`, etiqueta visible, no depender del placeholder.
-- **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos de catálogo mientras carga.
+- **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos (`.esqueleto`) en catálogo, tablas de pedidos y resumen admin. Spinner `.giro` en «Confirmar compra» mientras corre el RPC.
 - **Responsive:** dos columnas de productos bajo 640px; nav de la barra en una fila con scroll; ocultar el email en celular.
 
 ## Cómo aplicar cambios

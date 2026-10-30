@@ -82,7 +82,8 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | Clave pública frente a clave privada | `.env.example`, `src/lib/supabase.ts`, `scripts/_clientes.mjs` |
 | Cliente singleton, `AuthContext`, rutas protegidas | `src/lib/`, `src/context/`, `src/routes/` |
 | Diseño (mismas clases que la app de referencia) | `design.md`, `src/index.css` |
-| Paginación con `.range()` y `count: 'exact'` | `MisPedidos.tsx`, `PanelAdmin.tsx` |
+| Paginación con `.range()` sin `COUNT(*)` | `MisPedidos.tsx`, `PanelAdmin.tsx`, `PaginationControls.tsx` |
+| Caché por clave (TTL, SWR, dedupe, invalidación) | `consultaCache.ts`, `consultas.ts`, `useConsulta.ts` |
 | Pruebas que intentan romper la seguridad | `scripts/test-rls.mjs` |
 
 ## Supabase: crear el proyecto, conectar credenciales y preparar datos
@@ -109,7 +110,7 @@ La clave *publishable* está diseñada para ser pública y **no concede por sí 
 
 En un proyecto Supabase de prueba vacío, seguí este orden:
 
-1. Abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutalo. El archivo puede correrse más de una vez; define las tablas, el trigger de perfil, `crear_pedido()` y las políticas de seguridad. Si el proyecto ya tenía el esquema anterior, corré este archivo de nuevo: es idempotente y migra `pedido_detalles` (columna `producto_nombre`).
+1. Abrí **SQL Editor → New query**, pegá el contenido de `supabase/schema.sql` y ejecutalo. El archivo puede correrse más de una vez; define las tablas, el trigger de perfil, `crear_pedido()`, índices, políticas RLS y `(SELECT auth.uid())`. Si el proyecto ya tenía el esquema anterior, corré este archivo de nuevo: es idempotente y migra `pedido_detalles` (columna `producto_nombre`) y agrega índices que falten.
 2. En la terminal, instalá las dependencias y creá los datos demo:
 
    ```bash
@@ -122,14 +123,27 @@ En un proyecto Supabase de prueba vacío, seguí este orden:
 
 No insertamos usuarios directamente en `auth.users` con SQL: Supabase Auth administra esa tabla y el trigger del esquema crea cada perfil. Por eso el seed usa la Auth Admin API desde un script local con la clave secret, sin exponerla al navegador. Si solo necesitás preparar el esquema, ejecutá el DDL y omití `npm run seed`.
 
-## Rendimiento y carga
+## Rendimiento
 
-- Las pantallas de pedidos y administración se cargan bajo demanda con `React.lazy`; el JavaScript inicial no necesita descargar ambas antes de mostrar el ingreso.
-- `AuthContext` conserva el rol en memoria por 60 segundos para evitar repetir la consulta del perfil ante eventos cercanos de renovación de sesión. El valor no se guarda en `localStorage`; al expirar se vuelve a consultar y los errores se muestran en pantalla.
-- Este caché de rol solo evita trabajo repetido en la interfaz: no concede acceso a los datos. Las políticas RLS de Supabase siguen autorizando cada consulta y escritura.
-- La paginación limita las filas solicitadas por pantalla. Para tablas grandes, revisar consultas, índices y políticas con datos representativos; no aumentar el tamaño de página como sustituto de medir.
+Este starter es una **SPA con Vite (CSR)**: el navegador baja el JavaScript, pinta la UI y habla con Supabase. El caché vive en el cliente (`consultaCache.ts`). Es la elección del curso porque se ve completo el camino *navegador → Auth → RLS*, sin un servidor Node intermedio.
 
-Para comprobar la optimización, ejecutá `npm run build` y compará los archivos de `dist/assets`: las vistas cliente y admin deben aparecer como chunks separados. En producción, usá las herramientas de red del navegador para distinguir descarga de JavaScript, verificación de sesión y tiempo de respuesta de Supabase; son etapas distintas y conviene medirlas por separado.
+**Cuándo convendría SSR/SSG (Next, Astro), sin migrar este repo:** si el primer HTML tiene que aparecer con datos (SEO, catálogo público indexable, TTFB en redes lentas) o si querés esconder la clave publishable detrás de un servidor. Para un panel con login y un catálogo de demostración, CSR + caché alcanza y se lee mejor.
+
+No usa TanStack Query: tres lecturas (catálogo, Mis pedidos, resumen admin) entran en un módulo de ~100 líneas que los alumnos pueden abrir. Una librería sumaría API (QueryClient, query keys) y kilobytes gzip a cambio de lo mismo.
+
+Técnicas (cada una comentada en el código):
+
+- **Esqueletos** en catálogo, Mis pedidos y Administración.
+- **Caché por clave** con TTL (30 s fresco), stale-while-revalidate, deduplicación de requests en vuelo, invalidación tras `crear_pedido` y tras cambiar estado, refetch al volver el foco solo si el dato está viejo. El catálogo además se guarda en `sessionStorage`.
+- **Carrito 100 % local.** Contextos separados: el badge de la barra solo mira `cantidadTotal`; `memo` en la tarjeta evita re-pintar toda la grilla en cada +/−.
+- **Consultas:** columnas puntuales, embed de PostgREST (pedido + detalles, sin N+1), paginación `.range()` sin `COUNT(*)` (si la página vino llena, hay más). El resumen admin es una **vista SQL**, no un `reduce` en el cliente.
+- **`getSession()`** al arrancar (JWT local). `getUser()` haría red.
+- **`React.lazy`** + prefetch del chunk **y** de los datos al pasar el mouse por Tienda / Mis pedidos / Administración.
+- **`preconnect`** a Supabase en `index.html`.
+- **Code splitting** con `React.lazy` (Administración y Mis pedidos). Medimos `manualChunks` de React/supabase-js: el gzip del primer load no baja, y forzar un chunk de supabase-js anula el tree-shaking. En Vercel, `/assets/*` se cachea 1 año (`immutable`); `index.html` va con `no-cache`.
+- **Índices** que cubren los filtros reales y políticas con `(SELECT auth.uid())` + `is_admin()` STABLE. Si el proyecto demo ya tenía el esquema de `main`, **volvé a pegar `schema.sql`** (es idempotente) para los índices nuevos.
+
+Para comprobar el code splitting: `npm run build` y mirá `dist/assets`.
 
 ## UI y guía de diseño
 
@@ -212,7 +226,7 @@ La aplicación es un sitio estático de Vite: al ejecutar `npm run build` se gen
 
 ### Por qué existe `vercel.json`
 
-La aplicación usa React Router para mostrar rutas como `/login` y `/admin` en el navegador. Al abrir o recargar directamente una de esas direcciones, Vercel debe servir la aplicación de una sola página en vez de buscar un archivo físico con ese nombre. La regla de `vercel.json` reescribe las solicitudes a `/index.html`, y React Router decide qué pantalla mostrar. `public/_redirects` es la regla equivalente para otros hostings que la admiten; en Vercel se usa `vercel.json`.
+La aplicación usa React Router para mostrar rutas como `/login` y `/admin` en el navegador. Al abrir o recargar directamente una de esas direcciones, Vercel debe servir la aplicación de una sola página en vez de buscar un archivo físico con ese nombre. `vercel.json` reescribe esas solicitudes a `/index.html` y además pone `Cache-Control: public, max-age=31536000, immutable` en `/assets/*` (archivos con hash) y `no-cache` en `index.html` (para que un deploy nuevo no quede pegado). `public/_redirects` es la regla SPA equivalente para otros hostings.
 
 ### Conectar el dominio con Supabase
 

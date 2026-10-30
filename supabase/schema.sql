@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS public.productos (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS productos_nombre_idx ON public.productos (nombre);
+-- Concepto · El catálogo filtra activo y ordena por nombre: este índice parcial cubre ese SELECT.
+CREATE INDEX IF NOT EXISTS productos_activos_nombre_idx ON public.productos (nombre) WHERE activo;
 
 CREATE TABLE IF NOT EXISTS public.pedidos (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -71,7 +73,12 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
              CHECK (estado IN ('pendiente', 'confirmado', 'entregado', 'cancelado')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Concepto · Índice en la FK que mira RLS ("mis pedidos" filtra por user_id).
+-- Sin él, cada SELECT del cliente barre toda la tabla de pedidos.
 CREATE INDEX IF NOT EXISTS pedidos_user_id_idx ON public.pedidos (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS pedidos_estado_idx ON public.pedidos (estado);
+-- Filtro admin por estado + ORDER BY created_at DESC (cubre más que estado solo).
+CREATE INDEX IF NOT EXISTS pedidos_estado_created_at_idx ON public.pedidos (estado, created_at DESC);
 ALTER TABLE public.pedidos ALTER COLUMN total SET DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.pedido_detalles (
@@ -118,9 +125,14 @@ BEGIN
   END IF;
 END $$;
 
+-- Concepto · pedido_id es la FK de la política detalles_select (EXISTS sobre pedidos).
+-- producto_id cubre el JOIN / SET NULL al borrar un artículo.
 CREATE INDEX IF NOT EXISTS pedido_detalles_pedido_id_idx ON public.pedido_detalles (pedido_id);
+CREATE INDEX IF NOT EXISTS pedido_detalles_producto_id_idx ON public.pedido_detalles (producto_id);
 
 -- 5. HELPER is_admin() ------------------------------------------------------------
+-- Concepto · STABLE + (SELECT auth.uid()): Postgres evalúa el uid y el EXISTS
+-- una vez por consulta, no por fila. Es el "es_admin()" del enunciado.
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -211,6 +223,8 @@ REVOKE EXECUTE ON FUNCTION public.crear_pedido(jsonb) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION public.crear_pedido(jsonb) TO authenticated;
 
 -- 7. RLS -------------------------------------------------------------------------
+-- Concepto · (SELECT auth.uid()) se evalúa una vez por consulta (initPlan de Postgres).
+-- auth.uid() suelto se reevalúa en cada fila y sale más caro cuando RLS filtra muchas filas.
 ALTER TABLE public.profiles        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.productos       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pedidos         ENABLE ROW LEVEL SECURITY;

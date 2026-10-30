@@ -107,9 +107,14 @@ td select { min-width: 10rem; }
 .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1.25rem; margin: 0 0 1.25rem; align-items: stretch; }
 .producto { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; border-radius: 12px; transition: box-shadow .2s, transform .2s, border-color .2s; }
 @media (hover: hover) { .producto:hover { box-shadow: var(--sombra); transform: translateY(-2px); border-color: #b6c3d9; } }
-.marco { position: relative; }
+.marco {
+  position: relative;
+  aspect-ratio: 4 / 3; /* reserva el hueco: el emoji no empuja el layout al cargar */
+  overflow: hidden;
+  border-radius: var(--radio);
+}
 .ilustracion {
-  aspect-ratio: 4 / 3; border-radius: var(--radio); display: grid; place-items: center;
+  position: absolute; inset: 0; border-radius: var(--radio); display: grid; place-items: center;
   background: linear-gradient(180deg, #f8fafc, #eef2f7); font-size: 3.4rem; line-height: 1;
 }
 .en-carrito {
@@ -126,9 +131,20 @@ td select { min-width: 10rem; }
 .esqueleto .foto { aspect-ratio: 4 / 3; }
 .esqueleto .corto { width: 35%; }
 .esqueleto .boton { min-height: 44px; margin-top: auto; }
+.esqueleto td .bloque { min-height: 1.15rem; }
+.resumen .esqueleto { min-width: 8.5rem; }
 @keyframes brillo { to { background-position: -200% 0; } }
+
+.giro {
+  width: .9rem; height: .9rem;
+  border: 2px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; animation: girar .55s linear infinite; flex-shrink: 0;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
 @media (prefers-reduced-motion: reduce) {
   .esqueleto .bloque { animation: none; }
+  .giro { animation: none; border-right-color: currentColor; opacity: .7; }
   .producto { transition: none; }
   button, .boton { transition: none; }
 }
@@ -163,7 +179,10 @@ button.enlace { background: none; border: 0; padding: 0; color: var(--error); fo
 .alerta { margin: 0; padding: .6rem .8rem; border-radius: 8px; font-size: .9rem; }
 .alerta.error { background: #fee2e2; color: #991b1b; }
 .alerta.info { background: #dbeafe; color: #1e40af; }
-.comprar-grande { width: 100%; min-height: 50px; font-size: 1rem; font-weight: 600; }
+.comprar-grande {
+  width: 100%; min-height: 50px; font-size: 1rem; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+}
 
 @media (max-width: 640px) {
   main { padding: 1rem .85rem 5.5rem; }

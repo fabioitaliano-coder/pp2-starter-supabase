@@ -11,6 +11,8 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
+  // Concepto · /login es una ruta aparte. Con sesión, redirige: el formulario
+  // nunca se pinta debajo de la tienda.
   if (user) return <Navigate to={destino} replace />;
 
   const onSubmit = async (e: FormEvent) => {

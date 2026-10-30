@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { invalidarTrasCompra } from '../lib/consultas';
 import { dinero } from '../lib/formato';
 
 export function CartPanel() {
@@ -28,11 +29,13 @@ export function CartPanel() {
           ? 'Algún producto de tu carrito ya no está disponible. Quitalo o vaciá el carrito y volvé a elegir.'
           : error.message || 'No se pudo completar la compra.',
       });
-    } else {
-      vaciar();
-      navigate('/mis-pedidos', { state: { creado: true } });
+      setEnviando(false);
+      return;
     }
-    setEnviando(false);
+    invalidarTrasCompra();
+    vaciar();
+    // Feedback al terminar: Mis pedidos muestra el aviso de compra realizada.
+    navigate('/mis-pedidos', { state: { creado: true } });
   };
 
   return (
@@ -42,7 +45,7 @@ export function CartPanel() {
           <h2>Carrito</h2>
           <p className="nota">El carrito vive en este navegador. El pedido se guarda en Supabase al confirmar.</p>
         </div>
-        <button type="button" className="secundario chico peligro" onClick={vaciar} disabled={items.length === 0}>
+        <button type="button" className="secundario chico peligro" onClick={vaciar} disabled={items.length === 0 || enviando}>
           Vaciar
         </button>
       </div>
@@ -56,11 +59,13 @@ export function CartPanel() {
               <div>
                 <strong>{i.emoji} {i.nombre}</strong>
                 <span className="nota">{dinero(i.precio)} × {i.cantidad}</span>
+                {/* Concepto · +/− tocan el estado local: no hay spinner ni espera de red. */}
                 <div className="stepper" role="group" aria-label={`Cantidad de ${i.nombre}`}>
                   <button
                     type="button"
                     className="secundario chico"
                     aria-label="Quitar uno"
+                    disabled={enviando}
                     onClick={() => (i.cantidad > 1 ? setCantidad(i.producto_id, i.cantidad - 1) : quitar(i.producto_id))}
                   >
                     −
@@ -70,7 +75,7 @@ export function CartPanel() {
                     type="button"
                     className="secundario chico"
                     aria-label="Agregar uno"
-                    disabled={i.cantidad >= i.stock}
+                    disabled={enviando || i.cantidad >= i.stock}
                     onClick={() => setCantidad(i.producto_id, i.cantidad + 1)}
                   >
                     +
@@ -79,7 +84,9 @@ export function CartPanel() {
               </div>
               <div className="derecha">
                 <strong>{dinero(i.precio * i.cantidad)}</strong>
-                <button type="button" className="enlace peligro" onClick={() => quitar(i.producto_id)}>Quitar</button>
+                <button type="button" className="enlace peligro" onClick={() => quitar(i.producto_id)} disabled={enviando}>
+                  Quitar
+                </button>
               </div>
             </li>
           ))}
@@ -94,8 +101,20 @@ export function CartPanel() {
       <p className="nota">El total final lo calcula el servidor al confirmar.</p>
 
       {aviso && <p role="alert" className={`alerta ${aviso.tipo}`}>{aviso.texto}</p>}
-      <button type="button" className="comprar-grande" onClick={confirmar} disabled={enviando || items.length === 0}>
-        {enviando ? 'Procesando…' : user ? 'Confirmar compra' : 'Ingresar para comprar'}
+      {/* Concepto · Durante el RPC el botón se bloquea con spinner: evita doble envío y muestra que hay espera real. */}
+      <button
+        type="button"
+        className="comprar-grande"
+        onClick={confirmar}
+        disabled={enviando || items.length === 0}
+        aria-busy={enviando}
+      >
+        {enviando ? (
+          <>
+            <span className="giro" aria-hidden="true" />
+            Enviando…
+          </>
+        ) : user ? 'Confirmar compra' : 'Ingresar para comprar'}
       </button>
     </section>
   );

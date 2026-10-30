@@ -12,6 +12,7 @@ npm-debug.log*
 !src/lib/
 *.tsbuildinfo
 .vercel
+supabase/.temp/
 
 # Material para el aula virtual (Moodle): no se versiona
 guia-autenticacion-y-permisos-supabase.html

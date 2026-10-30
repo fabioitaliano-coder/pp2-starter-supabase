@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const roleCache = new Map<string, { role: Rol; cachedAt: number }>();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_evento, nuevaSesion) => {
+    const aplicarSesion = (nuevaSesion: Session | null) => {
       const currentRequest = ++requestId;
       setSession(nuevaSesion);
       if (!nuevaSesion) {
@@ -75,7 +75,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
         setLoading(false);
       }, 0);
+    };
+
+    // Concepto · getSession() lee el JWT del almacenamiento local: no espera a la red.
+    // getUser() haría un round-trip a Auth y dejaría la barra en "Ingresar" más tiempo.
+    supabase.auth.getSession().then(({ data: { session: sesionLocal } }) => {
+      if (!active) return;
+      aplicarSesion(sesionLocal);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((evento, nuevaSesion) => {
+      // INITIAL_SESSION lo cubre getSession(); así no disparamos dos veces la consulta del rol.
+      if (evento === 'INITIAL_SESSION') return;
+      aplicarSesion(nuevaSesion);
+    });
+
     return () => {
       active = false;
       requestId += 1;

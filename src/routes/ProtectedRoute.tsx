@@ -10,7 +10,7 @@ export function ProtectedRoute({ allowedRoles }: { allowedRoles?: Rol[] }) {
   const { user, role, loading, authError } = useAuth();
   const location = useLocation();
 
-  if (loading) return <p className="centro">Verificando credenciales…</p>;
+  if (loading) return <p className="centro" role="status">Verificando credenciales…</p>;
   if (authError) return <p className="centro error" role="alert">{authError}</p>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
 
