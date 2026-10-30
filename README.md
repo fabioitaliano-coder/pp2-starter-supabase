@@ -1,8 +1,8 @@
-# E-Commerce PP2 · Supabase (React + Vite + TypeScript)
+# Repositorio de consulta y referencia: E-Commerce PP2
 
-Aplicación de referencia de Práctica Profesionalizante II · IFTS 16. Muestra el camino **Supabase como BaaS**: el navegador habla directo con Supabase y la seguridad vive en la base (RLS), no en un servidor propio.
+Repositorio de consulta y referencia de Práctica Profesionalizante II · IFTS 16, hecho con React + Vite + TypeScript y Supabase. Muestra el camino **Supabase como BaaS**: el navegador habla directo con Supabase y la seguridad vive en la base (RLS), no en un servidor propio.
 
-Este repo es la **única app de referencia** de la materia. Es un **ejemplo**: cada grupo arma su propio proyecto sobre el tema que eligió, y acá ves cómo se resuelven los temas exigidos aplicados a una tienda.
+Es el **único repositorio de consulta y referencia** de la materia, y la app que contiene, **E-Commerce PP2**, es un **ejemplo**: cada grupo arma su propio proyecto sobre el tema que eligió, y acá ves cómo se resuelven los temas exigidos aplicados a una tienda.
 
 ## Qué se exige en tu proyecto
 
@@ -30,7 +30,7 @@ Datos 100 % ficticios (Ley 25.326). Licencia MIT.
 
 ## Primeros pasos (alumnos)
 
-Seguí estos pasos en orden para tener el starter andando en tu computadora con tu propio proyecto de Supabase. Cada paso enlaza a la explicación completa más abajo.
+Seguí estos pasos en orden para tener E-Commerce PP2 andando en tu computadora con tu propio proyecto de Supabase. Cada paso enlaza a la explicación completa más abajo.
 
 **Antes de empezar necesitás:** [Git](https://git-scm.com/downloads), [Node.js 22](https://nodejs.org/) (es la versión de `.nvmrc`; si usás nvm, corré `nvm use`), una cuenta en [GitHub](https://github.com) y una cuenta gratuita en [Supabase](https://supabase.com).
 
@@ -115,7 +115,7 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | Badges de estado reutilizados | `EstadoBadge.tsx`, `MisPedidos.tsx`, `PanelAdmin.tsx` |
 | Clave pública frente a clave privada | `.env.example`, `src/lib/supabase.ts`, `scripts/_clientes.mjs` |
 | Cliente singleton, `AuthContext`, rutas protegidas | `src/lib/`, `src/context/`, `src/routes/` |
-| Diseño (mismas clases que la app de referencia) | `design.md`, `src/index.css` |
+| Diseño (clases CSS reutilizables) | `design.md`, `src/index.css` |
 | Paginación con `.range()` sin `COUNT(*)` | `MisPedidos.tsx`, `PanelAdmin.tsx`, `PaginationControls.tsx` |
 | Caché por clave (TTL, SWR, dedupe, invalidación) | `consultaCache.ts`, `consultas.ts`, `useConsulta.ts` |
 | Pruebas que intentan romper la seguridad | `scripts/test-rls.mjs` |
@@ -242,7 +242,7 @@ Si usás un asistente de código (VS Code + GitHub Copilot, Google Antigravity, 
 
 ## Supabase: crear el proyecto, conectar credenciales y preparar datos
 
-Este starter ya incluye las dos piezas necesarias para preparar una base de demostración:
+Este repositorio ya incluye las dos piezas necesarias para preparar una base de demostración:
 
 - **DDL y seguridad:** [`supabase/schema.sql`](./supabase/schema.sql) crea el esquema de tablas (perfiles, productos, pedidos y renglones), tipo de rol, índices, trigger de perfiles, función `crear_pedido` (precio/stock/total en la base con `FOR UPDATE`), políticas RLS, permisos y vista. Es el esquema fuente de este ejemplo; no hace falta crear otro archivo DDL duplicado.
 - **Seed de demostración:** [`scripts/seed.mjs`](./scripts/seed.mjs), ejecutado con `npm run seed`, crea las cuentas de prueba mediante Supabase Auth Admin API, carga un catálogo y genera pedidos ficticios con artículos. El script es local, no es un seed SQL ni se ejecuta en el navegador.
@@ -288,7 +288,7 @@ No insertamos usuarios directamente en `auth.users` con SQL: Supabase Auth admin
 
 ## Rendimiento
 
-Este starter es una **SPA con Vite (CSR)**: el navegador baja el JavaScript, pinta la UI y habla con Supabase. El caché vive en el cliente (`consultaCache.ts`). Es la elección del curso porque se ve completo el camino *navegador → Auth → RLS*, sin un servidor Node intermedio.
+E-Commerce PP2 es una **SPA con Vite (CSR)**: el navegador baja el JavaScript, pinta la UI y habla con Supabase. El caché vive en el cliente (`consultaCache.ts`). Es la elección del curso porque se ve completo el camino *navegador → Auth → RLS*, sin un servidor Node intermedio.
 
 **Cuándo convendría SSR/SSG (Next, Astro), sin migrar este repo:** si el primer HTML tiene que aparecer con datos (SEO, catálogo público indexable, TTFB en redes lentas) o si querés esconder la clave publishable detrás de un servidor. Para un panel con login y un catálogo de demostración, CSR + caché alcanza y se lee mejor.
 
@@ -339,7 +339,7 @@ gh auth status
 gh repo view
 ```
 
-`gh repo view` y otros comandos que usan el repositorio actual necesitan que estés en un clon conectado a GitHub. Este starter puede estar dentro de un repositorio más grande; antes de publicar cambios, comprobá con `git remote -v` cuál es el remoto para no subirlos al proyecto equivocado.
+`gh repo view` y otros comandos que usan el repositorio actual necesitan que estés en un clon conectado a GitHub. Tu copia puede estar dentro de un repositorio más grande; antes de publicar cambios, comprobá con `git remote -v` cuál es el remoto para no subirlos al proyecto equivocado.
 
 ### Vercel CLI (`vercel`)
 
@@ -363,7 +363,7 @@ npx supabase login
 npx supabase projects list
 ```
 
-Para la primera instalación, este starter usa **SQL Editor** y el archivo `supabase/schema.sql`; listar proyectos con la CLI no conecta automáticamente la app ni copia sus claves a `.env`. El identificador del proyecto es la parte anterior a `.supabase.co` en la Project URL. Si elegís administrar el esquema con la CLI en vez del panel, inicializá y vinculá el proyecto (`npx supabase init`, `npx supabase link --project-ref TU_PROJECT_REF`) y adoptá migraciones versionadas antes de usar `npx supabase db push`. No alternes SQL Editor y migraciones sin controlar qué cambios ya se aplicaron.
+Para la primera instalación, este repositorio usa **SQL Editor** y el archivo `supabase/schema.sql`; listar proyectos con la CLI no conecta automáticamente la app ni copia sus claves a `.env`. El identificador del proyecto es la parte anterior a `.supabase.co` en la Project URL. Si elegís administrar el esquema con la CLI en vez del panel, inicializá y vinculá el proyecto (`npx supabase init`, `npx supabase link --project-ref TU_PROJECT_REF`) y adoptá migraciones versionadas antes de usar `npx supabase db push`. No alternes SQL Editor y migraciones sin controlar qué cambios ya se aplicaron.
 
 ## Las dos claves
 
@@ -424,7 +424,7 @@ La aplicación usa React Router para mostrar rutas como `/login` y `/admin` en e
 >
 > **Si cambiás de dominio** (otro proyecto de Vercel, un dominio propio, renombrás el proyecto), actualizá la Site URL y las Redirect URLs. El nuevo deploy no lo hace solo.
 
-Así funciona el circuito en este starter:
+Así funciona el circuito en E-Commerce PP2:
 
 1. `RegisterForm.tsx` llama a `signUp` con `emailRedirectTo = <origen actual>/auth/confirmado`. Por eso el enlace vuelve al mismo sitio donde la persona se registró: la demo o `localhost`.
 2. Supabase verifica el token y redirige con la sesión en el `#hash`. `supabase-js` la detecta sola (`detectSessionInUrl`, flujo implícito: el enlace funciona aunque lo abras en otro dispositivo).

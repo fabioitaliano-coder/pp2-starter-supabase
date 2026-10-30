@@ -54,7 +54,7 @@ No se agregaron tokens nuevos: los colores de estado e insignias son literales, 
 
 ## Cómo aplicar cambios
 
-1. Reutilizá las clases de `src/index.css` (los mismos nombres que en la app de referencia).
+1. Reutilizá las clases de `src/index.css` antes de crear nuevas.
 2. Si hace falta un token compartido nuevo, documentalo acá y en `:root`.
 3. No agregues Tailwind, shadcn/ui ni otra biblioteca visual.
 4. Después del cambio, ejecutá `npm run build` y revisá escritorio (≥1000px, carrito al costado) y celular (~390px, barra inferior del carrito).
