@@ -8,6 +8,8 @@ Este archivo lo leen los asistentes de código con IA antes de tocar el repo. Ta
 
 Starter de Práctica Profesionalizante II (IFTS 16). Tienda de ejemplo con **Supabase como BaaS**: el navegador habla directo con Supabase y la seguridad vive en la base (RLS), no en un servidor propio. Datos ficticios.
 
+**Alcance para alumnos:** cada grupo hace su propio proyecto sobre un tema que eligió. Lo **exigido** es (1) login (registro e inicio de sesión), (2) perfiles de usuario y administrador (roles) y (3) protección de rutas según sesión y rol. RLS se recomienda como la protección real en la base. La tienda (catálogo, carrito, `crear_pedido()`, administración de pedidos) es un **ejemplo** para adaptar a las entidades del tema del grupo (turnos, reservas, préstamos…), y checkout, seguimiento, factura y Mi cuenta son **avanzados/opcionales**. Si ayudás a un alumno en su proyecto, no le propongas copiar la tienda: aplicá estos temas a sus entidades.
+
 - **Stack:** React 19, Vite, TypeScript estricto, react-router-dom 7, `@supabase/supabase-js` 2. CSS plano (sin Tailwind).
 - **Base:** Postgres de Supabase. Todo el esquema está en `supabase/schema.sql` (idempotente: se puede correr varias veces).
 - **Sin servidor propio:** la lógica que no puede quedar en manos del navegador vive en funciones y triggers SQL.

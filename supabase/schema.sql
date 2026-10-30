@@ -4,9 +4,12 @@
 -- Cómo ejecutarlo: Supabase Studio > SQL Editor > New query > pegar > Run.
 -- Es idempotente: se puede correr más de una vez (proyecto vacío o demo ya creada).
 -- Solo datos ficticios (Ley 25.326).
--- Es el esquema de E-Commerce PP2, la app de referencia de la materia: primero el
--- núcleo (auth, perfiles y roles, RLS, catálogo, carrito, crear_pedido(), admin)
--- y después lo avanzado (checkout, seguimiento, factura simulada y Mi cuenta).
+-- Es el esquema de E-Commerce PP2, la app de referencia de la materia.
+-- Lo EXIGIDO en tu proyecto: login, perfiles de usuario y administrador (secciones
+-- 1 a 3) y protección de rutas (en la app). RLS (sección 7) se recomienda como la
+-- protección real en la base. Productos, pedidos y crear_pedido() son un EJEMPLO:
+-- reemplazalos por las entidades de tu tema (turnos, reservas, préstamos...).
+-- Checkout, seguimiento, factura simulada y Mi cuenta son avanzados/opcionales.
 
 -- 1. ROLES ---------------------------------------------------------------------
 DO $$ BEGIN

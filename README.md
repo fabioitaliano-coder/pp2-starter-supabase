@@ -2,7 +2,29 @@
 
 Aplicación de referencia de Práctica Profesionalizante II · IFTS 16. Muestra el camino **Supabase como BaaS**: el navegador habla directo con Supabase y la seguridad vive en la base (RLS), no en un servidor propio.
 
-Este repo es la **única app de referencia** de la materia y la **base copiable** para tu proyecto. Recorrelo en este orden: primero el núcleo (auth, perfiles y roles, RLS, catálogo, carrito, `crear_pedido()`, administración y estados, pruebas) y después lo avanzado/opcional (checkout por pasos con pago simulado, seguimiento de pedidos, factura simulada y Mi cuenta).
+Este repo es la **única app de referencia** de la materia. Es un **ejemplo**: cada grupo arma su propio proyecto sobre el tema que eligió, y acá ves cómo se resuelven los temas exigidos aplicados a una tienda.
+
+## Qué se exige en tu proyecto
+
+> [!IMPORTANT]
+> En tu proyecto, sobre **tu propio tema**, se exige:
+>
+> 1. **Login:** inicio de sesión y registro (Supabase Auth).
+> 2. **Perfiles de usuario y administrador:** cada cuenta tiene un rol, y el rol nunca lo elige quien se registra.
+> 3. **Protección de rutas:** cada pantalla se muestra según haya sesión y según el rol.
+>
+> **RLS se recomienda** como la protección real en la base (las rutas protegidas solo ordenan la navegación), pero no es un requisito extra.
+>
+> **No tenés que hacer una tienda.** El catálogo, el carrito, `crear_pedido()` y la administración de pedidos son un **ejemplo** de cómo aplicar esos tres temas a un tema concreto: reemplazá productos y pedidos por las entidades de tu proyecto (por ejemplo turnos, reservas o préstamos). El checkout por pasos, el seguimiento, la factura simulada y Mi cuenta son **avanzados y opcionales**.
+
+| Tema | Tipo | Dónde verlo en este repo |
+| :--- | :--- | :--- |
+| Login: registro, confirmación por mail e inicio de sesión | **Exigido** | `src/features/auth/`, `AuthContext.tsx` |
+| Perfiles de usuario y administrador (roles) | **Exigido** | `profiles` y `handle_new_user()` en `supabase/schema.sql`, `AuthContext.tsx` |
+| Protección de rutas según sesión y rol | **Exigido** | `src/routes/ProtectedRoute.tsx`, `App.tsx` |
+| RLS por dueño y por rol | Recomendado | `supabase/schema.sql`, sección 7; `scripts/test-rls.mjs` |
+| Catálogo, carrito, `crear_pedido()`, administración y estados de pedidos | Ejemplo | `Tienda.tsx`, `CartPanel.tsx`, `crear_pedido()`, `PanelAdmin.tsx` |
+| Checkout por pasos, seguimiento, factura simulada y Mi cuenta | Avanzado / opcional | `src/features/checkout/`, `src/features/client/` |
 
 Datos 100 % ficticios (Ley 25.326). Licencia MIT.
 
@@ -100,6 +122,8 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | Instrucciones para agentes de IA | `AGENTS.md`, `docs/trabajar-con-agentes-ia.md` |
 
 ## Flujo de compra
+
+> Esta sección y las siguientes describen el **ejemplo** de la tienda (y sus partes avanzadas). No son requisitos de tu proyecto.
 
 1. **Carrito** (`CartPanel.tsx`): «Ir a pagar» lleva a `/checkout`. Sin sesión, pasa antes por `/login` y vuelve.
 2. **Checkout por pasos** (`/checkout`):
