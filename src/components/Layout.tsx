@@ -1,7 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCartMeta } from '../context/CartContext';
-import { prefetchRutaAdmin, prefetchRutaMisPedidos, prefetchRutaTienda } from '../lib/cargarRutas';
+import { prefetchRutaAdmin, prefetchRutaMiCuenta, prefetchRutaMisPedidos, prefetchRutaTienda } from '../lib/cargarRutas';
 
 export function Layout() {
   const { user, role, signOut } = useAuth();
@@ -22,6 +22,11 @@ export function Layout() {
               Mis pedidos
             </NavLink>
           )}
+          {user && (
+            <NavLink to="/cuenta" onMouseEnter={() => prefetchRutaMiCuenta(user.id)} onFocus={() => prefetchRutaMiCuenta(user.id)}>
+              Mi cuenta
+            </NavLink>
+          )}
           {role === 'admin' && (
             <NavLink to="/admin" onMouseEnter={prefetchRutaAdmin} onFocus={prefetchRutaAdmin}>
               Administración
@@ -31,7 +36,7 @@ export function Layout() {
         <div className="sesion">
           {user ? (
             <>
-              <small>{user.email}{role ? ` · ${role}` : ''}</small>
+              <small className="sesion-email">{user.email}{role ? ` · ${role}` : ''}</small>
               <button type="button" className="secundario" onClick={signOut}>Salir</button>
             </>
           ) : (

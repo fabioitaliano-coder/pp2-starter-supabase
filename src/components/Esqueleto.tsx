@@ -42,3 +42,22 @@ export function EsqueletoResumen({ cantidad = 4 }: { cantidad?: number }) {
     </ul>
   );
 }
+
+export function EsqueletoPedido() {
+  return (
+    <div className="esqueleto-pedido" aria-busy="true">
+      <span className="sr-only" role="status">Cargando pedido…</span>
+      <div className="tarjeta esqueleto" aria-hidden="true">
+        <div className="bloque corto" />
+        <div className="bloque" />
+        <div className="bloque" />
+      </div>
+      <div className="tarjeta esqueleto" aria-hidden="true">
+        <div className="bloque" />
+        <div className="bloque corto" />
+        <div className="bloque" />
+        <div className="bloque corto" />
+      </div>
+    </div>
+  );
+}

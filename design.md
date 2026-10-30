@@ -33,11 +33,23 @@ Tipografía: pila del sistema. Foco: anillo azul semitransparente (`outline` 3px
 - **Catálogo:** `.tienda-layout` (productos + `.carrito-lateral` sticky desde 1000px). En angosto, `.barra-carrito` fija abajo.
 - **Tarjeta de producto:** `.tarjeta.producto` con ilustración emoji. `.marco` reserva `aspect-ratio: 4 / 3` para que el emoji no provoque layout shift. Insignia de stock, título, descripción, precio y botón al pie.
 - **CartPanel:** el mismo panel al costado de la tienda y en `/carrito`. Stepper de cantidad, totales y nota de que el importe lo calcula el servidor.
-- **Estados:** siempre `EstadoBadge` (`.estado`). Pendiente ámbar, confirmado azul, entregado verde, cancelado rojo. No indicar el estado solo con color.
+- **Estados:** siempre `EstadoBadge` (`.estado`). Pendiente ámbar, confirmado azul, despachado violeta (`#ede9fe` / `#5b21b6`), entregado verde, cancelado rojo. No indicar el estado solo con color.
+- **CartPanel → checkout:** el panel ya no crea el pedido; el botón «Ir a pagar» lleva a `/checkout` (prefetch al pasar el mouse).
+- **Checkout por pasos:** `.pasos` (Entrega → Pago → Revisión, con número/✓ y `aria-current="step"`), `.checkout-layout` con el formulario `.checkout-paso` y el `ResumenCompra` sticky a la derecha desde 1000px; en celular el resumen va arriba plegado en `<details class="resumen-movil">`. Acciones al pie en `.acciones-paso` (Volver secundario + principal `.comprar-grande`). Al cambiar de paso el foco va al `h2`.
+- **Campos accesibles:** `Campo` / `CampoSelect` (`.campo`, `.error-campo`, ayuda en `.nota`) dentro de `.grilla-campos` (dos columnas, una bajo 640px; `ancho="medio"` ocupa una). Al validar, `enfocarPrimerError` lleva el foco al primer campo con error.
+- **Pago simulado:** `.aviso-simulacion` (ámbar punteado, siempre visible), tarjetas de opción `.opcion-pago` / `.elegida` con radio real, `.tarjetas-prueba`, `.datos-transferencia`.
+- **Revisión:** `.bloque-revision` con botón `.enlace-azul` «Editar».
+- **ResumenCompra:** mismo bloque en checkout, confirmación y seguimiento (`.resumen-compra`, `.miniatura`, `.total-final`, envío `.gratis`).
+- **Confirmación:** `.exito-hero` (borde superior verde, `.check-grande`, número de pedido grande) con «Seguir comprando» (principal) y «Seguir mi pedido» (secundario).
+- **Seguimiento:** `.linea-tiempo` vertical (hecho verde con ✓, actual azul, futuro gris, cancelado rojo; el texto «completado / en curso» va en `.sr-only`), `.datos-pedido` (entrega, pago, factura) y `FormSeguimiento` para buscar por número.
+- **Mi cuenta:** `.cuenta-grilla` (formularios a la izquierda, historial a la derecha desde 1000px), cada formulario en `.tarjeta.formulario-cuenta`.
+- **Factura simulada:** `.factura` con letra en `.factura-tipo`, marca de agua «SIMULADA» y `@media print` que oculta barra y botones (`.no-imprimir`).
 - **Tablas:** encabezado `#f1f5f9`, scroll horizontal, detalle expandable.
 - **Formularios:** `.tarjeta.formulario`, etiqueta visible, no depender del placeholder.
-- **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos (`.esqueleto`) en catálogo, tablas de pedidos y resumen admin. Spinner `.giro` en «Confirmar compra» mientras corre el RPC.
+- **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos (`.esqueleto`) en catálogo, tablas de pedidos y resumen admin. Esqueleto `EsqueletoPedido` en confirmación, seguimiento y factura. Spinner `.giro` en «Confirmar y pagar» mientras corre el RPC.
 - **Responsive:** dos columnas de productos bajo 640px; nav de la barra en una fila con scroll; ocultar el email en celular.
+
+No se agregaron tokens nuevos: los colores de estado e insignias son literales, igual que los existentes.
 
 ## Cómo aplicar cambios
 

@@ -117,17 +117,62 @@ async function cargarDetalles(pedidos) {
   }
 }
 
+// Domicilios ficticios de los clientes demo (también prellenan el checkout).
+const DOMICILIOS = {
+  'cliente1@demo.test': {
+    nombre: 'Cliente Uno', calle: 'Av. Rivadavia 6500', piso_depto: '3° B', ciudad: 'CABA',
+    provincia: 'Ciudad Autónoma de Buenos Aires', cp: 'C1406', telefono: '11 5555-0101',
+  },
+  'cliente2@demo.test': {
+    nombre: 'Cliente Dos', calle: 'Calle 7 1234', piso_depto: null, ciudad: 'La Plata',
+    provincia: 'Buenos Aires', cp: '1900', telefono: '221 555-0202',
+  },
+};
+const PAGOS = [
+  { pago_metodo: 'tarjeta', pago_detalle: 'Visa terminada en 4242' },
+  { pago_metodo: 'transferencia', pago_detalle: 'Transferencia (simulada)' },
+  { pago_metodo: 'efectivo', pago_detalle: 'Efectivo al recibir' },
+];
+const HORA = 36e5;
+
+function datosEnvio(email) {
+  const d = DOMICILIOS[email];
+  return {
+    envio_nombre: d.nombre, envio_calle: d.calle, envio_piso_depto: d.piso_depto, envio_ciudad: d.ciudad,
+    envio_provincia: d.provincia, envio_cp: d.cp, envio_telefono: d.telefono,
+  };
+}
+
+// Fechas coherentes con el estado (el trigger solo las pone en UPDATE, no en INSERT).
+function fechasSegunEstado(estado, creado) {
+  const t = new Date(creado).getTime();
+  const iso = (h) => new Date(Math.min(Date.now(), t + h * HORA)).toISOString();
+  return {
+    confirmado_at: ['confirmado', 'despachado', 'entregado'].includes(estado) ? iso(2) : null,
+    despachado_at: ['despachado', 'entregado'].includes(estado) ? iso(20) : null,
+    entregado_at: estado === 'entregado' ? iso(60) : null,
+    cancelado_at: estado === 'cancelado' ? iso(3) : null,
+  };
+}
+
 const { count: nPedidos } = await admin.from('pedidos').select('*', { count: 'exact', head: true });
 const { count: nDetalles } = await admin.from('pedido_detalles').select('*', { count: 'exact', head: true });
 
 if (!nPedidos) {
-  const estados = ['pendiente', 'confirmado', 'entregado', 'cancelado'];
-  const clientes = [ids['cliente1@demo.test'], ids['cliente2@demo.test']];
-  const filas = Array.from({ length: 24 }, (_, i) => ({
-    user_id: clientes[i % 2],
-    estado: estados[Math.floor(i / 2) % 4],
-    created_at: new Date(Date.now() - i * 36e5 * 5).toISOString(),
-  }));
+  const estados = ['pendiente', 'confirmado', 'despachado', 'entregado', 'cancelado'];
+  const emails = ['cliente1@demo.test', 'cliente2@demo.test'];
+  const filas = Array.from({ length: 24 }, (_, i) => {
+    const estado = estados[Math.floor(i / 2) % estados.length];
+    const created_at = new Date(Date.now() - i * HORA * 5).toISOString();
+    return {
+      user_id: ids[emails[i % 2]],
+      estado,
+      created_at,
+      ...fechasSegunEstado(estado, created_at),
+      ...datosEnvio(emails[i % 2]),
+      ...PAGOS[i % PAGOS.length],
+    };
+  });
   const { data: creados, error } = await admin.from('pedidos').insert(filas).select('id');
   if (error) throw error;
   await cargarDetalles(creados);
@@ -136,5 +181,39 @@ if (!nPedidos) {
   if (error) throw error;
   await cargarDetalles(existentes);
 }
+
+// Pedidos demo creados con el esquema anterior: completar domicilio y pago si faltan.
+const emailPorId = Object.fromEntries(Object.entries(ids).map(([email, id]) => [id, email]));
+const { data: sinEnvio, error: errorSinEnvio } = await admin
+  .from('pedidos').select('id, user_id').is('envio_calle', null);
+if (errorSinEnvio) throw errorSinEnvio;
+for (const [i, p] of (sinEnvio ?? []).entries()) {
+  const email = emailPorId[p.user_id];
+  if (!DOMICILIOS[email]) continue; // solo cuentas demo
+  const { error } = await admin.from('pedidos')
+    .update({ ...datosEnvio(email), ...PAGOS[i % PAGOS.length] }).eq('id', p.id);
+  if (error) throw error;
+}
+
+// Factura de los despachados/entregados que todavía no la tengan. emitir_factura() es
+// idempotente y solo la puede ejecutar service_role (no la API pública).
+const { data: aFacturar, error: errorFacturar } = await admin
+  .from('pedidos').select('id, facturas(id)').in('estado', ['despachado', 'entregado'])
+  .order('created_at', { ascending: true });
+if (errorFacturar) throw errorFacturar;
+for (const p of aFacturar ?? []) {
+  const tiene = Array.isArray(p.facturas) ? p.facturas.length > 0 : Boolean(p.facturas);
+  if (tiene) continue;
+  const { error } = await admin.rpc('emitir_factura', { p_pedido: p.id });
+  if (error) throw error;
+}
+
+// Domicilio guardado de los clientes demo (Mi cuenta).
+const direcciones = Object.entries(DOMICILIOS).map(([email, d]) => ({
+  user_id: ids[email], calle: d.calle, piso_depto: d.piso_depto, ciudad: d.ciudad,
+  provincia: d.provincia, codigo_postal: d.cp, telefono: d.telefono,
+}));
+const { error: errorDirecciones } = await admin.from('direcciones').upsert(direcciones, { onConflict: 'user_id' });
+if (errorDirecciones) throw errorDirecciones;
 
 console.log(`Listo. Admin: admin@demo.test / ${PASSWORD_DEMO} · Clientes: cliente1@demo.test, cliente2@demo.test`);

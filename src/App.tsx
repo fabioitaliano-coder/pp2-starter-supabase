@@ -8,18 +8,30 @@ import { LoginForm } from './features/auth/LoginForm';
 import { RegisterForm } from './features/auth/RegisterForm';
 import { Tienda } from './features/tienda/Tienda';
 import { Carrito } from './features/tienda/Carrito';
-import { cargarMisPedidos, cargarPanelAdmin } from './lib/cargarRutas';
+import { LimiteError } from './components/LimiteError';
+import {
+  cargarBuscarPedido, cargarCheckout, cargarCompraConfirmada, cargarFactura,
+  cargarMiCuenta, cargarMisPedidos, cargarPanelAdmin, cargarSeguimiento,
+} from './lib/cargarRutas';
 
 // Concepto · React.lazy: Administración (y Mis pedidos) no viajan en el JS inicial.
 // El chunk se baja al entrar a la ruta, o antes si el Layout hace prefetch al pasar el mouse.
 const MisPedidos = lazy(cargarMisPedidos);
 const PanelAdmin = lazy(cargarPanelAdmin);
+const Checkout = lazy(cargarCheckout);
+const CompraConfirmada = lazy(cargarCompraConfirmada);
+const SeguimientoPedido = lazy(cargarSeguimiento);
+const BuscarPedido = lazy(cargarBuscarPedido);
+const Factura = lazy(cargarFactura);
+const MiCuenta = lazy(cargarMiCuenta);
 
 export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <BrowserRouter>
+          {/* Si un chunk viejo falla (deploy nuevo), LimiteError ofrece recargar en vez de pantalla en blanco. */}
+          <LimiteError>
           <Suspense fallback={<p className="centro" role="status">Cargando pantalla…</p>}>
             <Routes>
               <Route element={<Layout />}>
@@ -30,6 +42,12 @@ export default function App() {
                 <Route path="/unauthorized" element={<p className="centro">No tenés permiso para ver esta página.</p>} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/mis-pedidos" element={<MisPedidos />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/checkout/listo/:id" element={<CompraConfirmada />} />
+                  <Route path="/seguimiento" element={<BuscarPedido />} />
+                  <Route path="/pedidos/:id" element={<SeguimientoPedido />} />
+                  <Route path="/pedidos/:id/factura" element={<Factura />} />
+                  <Route path="/cuenta" element={<MiCuenta />} />
                 </Route>
                 <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                   <Route path="/admin" element={<PanelAdmin />} />
@@ -38,6 +56,7 @@ export default function App() {
               </Route>
             </Routes>
           </Suspense>
+          </LimiteError>
         </BrowserRouter>
       </CartProvider>
     </AuthProvider>

@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useConsulta } from '../../hooks/useConsulta';
 import {
   CLAVES, invalidarTrasCambioEstado, pedirAdminPedidos, pedirAdminResumen,
@@ -8,14 +9,15 @@ import { PaginationControls } from '../../components/PaginationControls';
 import { EstadoBadge } from '../../components/EstadoBadge';
 import { ListaArticulos } from '../../components/ListaArticulos';
 import { EsqueletoFilas, EsqueletoResumen } from '../../components/Esqueleto';
-import { ESTADOS, ESTADO_ETIQUETA, type Estado, type Pedido } from '../../types';
-import { dinero, fecha } from '../../lib/formato';
+import { ESTADOS, ESTADO_ETIQUETA, METODO_PAGO_ETIQUETA, TRANSICIONES, type Estado, type Pedido } from '../../types';
+import { dinero, domicilioEnvio, facturaDe, fecha, fechaCorta, numeroFactura, numeroPedido } from '../../lib/formato';
 
 export function PanelAdmin() {
   const [pagina, setPagina] = useState(1);
   const [filtro, setFiltro] = useState<'' | Estado>('');
   const [abierto, setAbierto] = useState<string | null>(null);
   const [errorAccion, setErrorAccion] = useState<string | null>(null);
+  const [avisoAccion, setAvisoAccion] = useState<string | null>(null);
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
   const [pedidosLocal, setPedidosLocal] = useState<Pedido[] | null>(null);
 
@@ -34,17 +36,29 @@ export function PanelAdmin() {
     const anterior = pedidos.find((p) => p.id === id)?.estado;
     if (!anterior || anterior === estado || actualizandoId) return;
     setErrorAccion(null);
+    setAvisoAccion(null);
     setActualizandoId(id);
     // Concepto · UI optimista: el badge cambia ya. Si el UPDATE falla, se revierte.
     setPedidosLocal(pedidos.map((p) => (p.id === id ? { ...p, estado } : p)));
     const { error } = await supabase.from('pedidos').update({ estado }).eq('id', id);
     if (error) {
       setPedidosLocal(null);
-      setErrorAccion('No se pudo cambiar el estado. Se restauró el valor anterior.');
+      // Concepto · Las reglas de negocio (qué transición vale, factura al despachar) viven
+      // en un trigger de la base. Acá solo mostramos su mensaje y su pista (hint).
+      const pista = (error as { hint?: string }).hint;
+      setErrorAccion(`No se pudo cambiar el estado: ${error.message}${pista ? ` ${pista}` : ''} Se restauró el valor anterior.`);
     } else {
       invalidarTrasCambioEstado();
       await Promise.all([lista.recargar(true), resumen.recargar(true)]);
       setPedidosLocal(null);
+      if (estado === 'despachado') {
+        // La factura la emitió el trigger; la leemos para confirmar número y hora.
+        const { data: f } = await supabase
+          .from('facturas').select('numero, punto_venta, emitida_at').eq('pedido_id', id).maybeSingle();
+        setAvisoAccion(f
+          ? `Pedido despachado. Factura B N.º ${numeroFactura(f)} emitida el ${fechaCorta(f.emitida_at)}.`
+          : 'Pedido despachado.');
+      }
     }
     setActualizandoId(null);
   };
@@ -81,6 +95,7 @@ export function PanelAdmin() {
           ))}
         </select>
       </label>
+      {avisoAccion && <p role="status" className="exito">{avisoAccion}</p>}
       {(errorAccion || lista.error || resumen.error) && (
         <p role="alert" className="error">{errorAccion ?? lista.error ?? resumen.error}</p>
       )}
@@ -88,18 +103,24 @@ export function PanelAdmin() {
         <table aria-busy={cargandoLista}>
           <thead>
             <tr>
+              <th>N.º</th>
               <th>Fecha</th>
               <th>Cliente</th>
               <th>Total</th>
               <th>Estado</th>
+              <th>Factura</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {cargandoLista && <EsqueletoFilas columnas={5} />}
-            {!cargandoLista && pedidos.map((p) => (
+            {cargandoLista && <EsqueletoFilas columnas={7} />}
+            {!cargandoLista && pedidos.map((p) => {
+              const factura = facturaDe(p);
+              const permitidos = TRANSICIONES[p.estado];
+              return (
               <Fragment key={p.id}>
                 <tr>
+                  <td><strong>{numeroPedido(p.numero)}</strong></td>
                   <td>{fecha(p.created_at)}</td>
                   <td>
                     {p.profiles?.full_name ?? '—'}
@@ -111,16 +132,29 @@ export function PanelAdmin() {
                     <div className="celda-estado">
                       <EstadoBadge estado={p.estado} />
                       <select
-                        aria-label={`Cambiar estado del pedido ${p.id.slice(0, 8)}`}
+                        aria-label={`Cambiar estado del pedido ${numeroPedido(p.numero)}`}
                         value={p.estado}
-                        disabled={actualizandoId === p.id}
+                        disabled={actualizandoId === p.id || permitidos.length === 0}
                         onChange={(e) => cambiarEstado(p.id, e.target.value as Estado)}
                       >
+                        {/* Solo se habilitan las transiciones válidas; igual la base vuelve a validarlas. */}
                         {ESTADOS.map((s) => (
-                          <option key={s} value={s}>{ESTADO_ETIQUETA[s]}</option>
+                          <option key={s} value={s} disabled={s !== p.estado && !permitidos.includes(s)}>
+                            {ESTADO_ETIQUETA[s]}
+                          </option>
                         ))}
                       </select>
                     </div>
+                  </td>
+                  <td>
+                    {factura ? (
+                      <small>
+                        <Link to={`/pedidos/${p.id}/factura`}>{numeroFactura(factura)}</Link>
+                        <br />{fechaCorta(factura.emitida_at)}
+                      </small>
+                    ) : (
+                      <small className="nota">{p.estado === 'cancelado' ? 'No corresponde' : 'Al despachar'}</small>
+                    )}
                   </td>
                   <td>
                     <button
@@ -134,12 +168,22 @@ export function PanelAdmin() {
                 </tr>
                 {abierto === p.id && (
                   <tr>
-                    <td colSpan={5}><ListaArticulos items={p.pedido_detalles} /></td>
+                    <td colSpan={7}>
+                      <div className="detalle-admin">
+                        <ListaArticulos items={p.pedido_detalles} />
+                        <p className="nota">
+                          Entrega: {domicilioEnvio(p) || 'sin domicilio (pedido demo)'}
+                          {p.pago_metodo && <> · Pago: {METODO_PAGO_ETIQUETA[p.pago_metodo]}{p.pago_detalle ? ` (${p.pago_detalle})` : ''}</>}
+                          {' · '}<Link to={`/pedidos/${p.id}`}>Ver seguimiento</Link>
+                        </p>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </Fragment>
-            ))}
-            {!cargandoLista && pedidos.length === 0 && <tr><td colSpan={5}>Sin pedidos.</td></tr>}
+              );
+            })}
+            {!cargandoLista && pedidos.length === 0 && <tr><td colSpan={7}>Sin pedidos.</td></tr>}
           </tbody>
         </table>
       </div>
