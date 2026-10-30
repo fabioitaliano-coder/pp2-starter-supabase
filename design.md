@@ -46,6 +46,7 @@ Tipografía: pila del sistema. Foco: anillo azul semitransparente (`outline` 3px
 - **Factura simulada:** `.factura` con letra en `.factura-tipo`, marca de agua «SIMULADA» y `@media print` que oculta barra y botones (`.no-imprimir`).
 - **Tablas:** encabezado `#f1f5f9`, scroll horizontal, detalle expandable.
 - **Formularios:** `.tarjeta.formulario`, etiqueta visible, no depender del placeholder.
+- **Ingreso, registro y confirmación:** `.auth-tarjeta` (tarjeta centrada de 440px con sombra), `CampoClave` con botón «Mostrar/Ocultar» (`.clave-envoltura`, `.clave-ver`), confirmación de contraseña con `.ok-campo` cuando coincide, errores de formulario en `.alerta`, pasos del mail en `.pasos-correo`, ícono redondo `.icono-aviso` (`.icono-error` en rojo), bloque de reenvío `.reenviar` con cuenta regresiva y aviso de éxito en la tienda con `.aviso-banda`.
 - **Errores y carga:** `role="alert"` / `role="status"`. Esqueletos (`.esqueleto`) en catálogo, tablas de pedidos y resumen admin. Esqueleto `EsqueletoPedido` en confirmación, seguimiento y factura. Spinner `.giro` en «Confirmar y pagar» mientras corre el RPC.
 - **Responsive:** dos columnas de productos bajo 640px; nav de la barra en una fila con scroll; ocultar el email en celular.
 

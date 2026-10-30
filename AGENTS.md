@@ -31,6 +31,7 @@ supabase/schema.sql      Tablas, triggers, funciones (crear_pedido, emitir_factu
 scripts/                 Scripts locales con la clave secret: _clientes.mjs, seed.mjs, test-rls.mjs
 src/App.tsx              Rutas (lazy) y ProtectedRoute
 src/lib/                 supabase.ts (cliente), consultas.ts (lecturas + caché), formato.ts, cargarRutas.ts
+src/features/auth/       Ingreso, registro, confirmación de cuenta (/auth/confirmado) y reenvío del mail
 src/context/             AuthContext (sesión y rol), CartContext (carrito local)
 src/components/          Piezas reutilizables: Campo, ResumenCompra, LineaTiempo, EstadoBadge, Esqueleto…
 src/features/tienda/     Catálogo y carrito
@@ -50,6 +51,13 @@ design.md                Sistema visual: leelo antes de tocar UI
 6. **Datos de tarjeta:** el pago es una simulación. Al servidor viajan solo marca y últimos 4; `crear_pedido` rechaza número completo y CVV. No guardar datos de tarjeta en ningún lado (tampoco en `sessionStorage`).
 7. `ProtectedRoute` mejora la navegación, **no** es seguridad: toda regla tiene que estar también en la base.
 8. El rol nunca se toma de lo que manda el cliente (ver `handle_new_user()`).
+
+## Auth: URLs de redirección
+
+- `signUp` y `resend` mandan `emailRedirectTo = window.location.origin + '/auth/confirmado'` (`src/lib/retornoAuth.ts`). No lo cambies por una URL fija.
+- Si "llega el mail pero el enlace no deja logueado / lleva a `localhost:3000`", **no es un bug del código**: falta configurar en Supabase **Authentication → URL Configuration** la **Site URL** (el deploy) y las **Redirect URLs** (`https://<deploy>/**` y `http://localhost:5173/**`). Ver README, «Conectar el dominio con Supabase».
+- Por CLI: `supabase/config.toml` mínimo (`project_id` + `[auth] site_url` y `additional_redirect_urls`), `supabase config diff` y recién después `supabase config push`. Un agente **no** corre `config push` sin que la persona lea el diff y lo apruebe. Nunca subas el `config.toml` completo de `supabase init` sin revisarlo: pisa la configuración remota con valores locales.
+- Si se cambia el dominio del deploy, hay que actualizar esas URL.
 
 ## Convenciones
 
