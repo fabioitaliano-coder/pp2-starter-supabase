@@ -27,7 +27,7 @@ export function Layout() {
     <>
       <header className="barra">
         <Link to="/" className="marca" onMouseEnter={prefetchRutaTienda} onFocus={prefetchRutaTienda}>
-          PP2 · Starter Supabase
+          E-Commerce PP2
         </Link>
         <nav aria-label="Principal">
           <NavLink to="/" end onMouseEnter={prefetchRutaTienda} onFocus={prefetchRutaTienda}>Tienda</NavLink>

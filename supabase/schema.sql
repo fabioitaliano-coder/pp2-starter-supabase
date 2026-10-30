@@ -4,8 +4,12 @@
 -- Cómo ejecutarlo: Supabase Studio > SQL Editor > New query > pegar > Run.
 -- Es idempotente: se puede correr más de una vez (proyecto vacío o demo ya creada).
 -- Solo datos ficticios (Ley 25.326).
--- Los nombres (crear_pedido, pedido_detalles, producto_nombre) coinciden con la
--- app de referencia ecommerce-ifts16-supabase, en una versión más chica.
+-- Es el esquema de E-Commerce PP2, el repositorio de consulta y referencia de la materia.
+-- Lo EXIGIDO en tu proyecto: login, perfiles de usuario y administrador (secciones
+-- 1 a 3) y protección de rutas (en la app). RLS (sección 7) se recomienda como la
+-- protección real en la base. Productos, pedidos y crear_pedido() son un EJEMPLO:
+-- reemplazalos por las entidades de tu tema (turnos, reservas, préstamos...).
+-- Checkout, seguimiento, factura simulada y Mi cuenta son avanzados/opcionales.
 
 -- 1. ROLES ---------------------------------------------------------------------
 DO $$ BEGIN
@@ -162,7 +166,7 @@ ALTER TABLE public.pedido_detalles
 ALTER TABLE public.pedido_detalles
   ALTER COLUMN precio_unitario SET DEFAULT 0;
 
--- Compatibilidad con el starter anterior (columna texto "producto" o "nombre").
+-- Compatibilidad con una versión anterior del esquema (columna texto "producto" o "nombre").
 DO $$
 BEGIN
   IF EXISTS (
@@ -250,7 +254,7 @@ GRANT  EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 -- Concepto · El navegador manda solo [{ producto_id, cantidad }], el domicilio y el
 -- MÉTODO de pago. Precio y stock salen de la fila real, bloqueada con FOR UPDATE (dos
 -- compras no venden la misma última unidad). Si algo falla, RAISE EXCEPTION revierte
--- pedido y stock juntos. Misma idea que en ecommerce-ifts16-supabase, sin descuentos.
+-- pedido y stock juntos. Sin descuentos, para que el ejemplo quede simple.
 -- Concepto · Pago simulado: de una tarjeta solo viajan marca y últimos 4 dígitos.
 -- En un sistema real los datos completos van a la pasarela (Mercado Pago, Stripe…)
 -- y la base guarda un token. Si llega un número completo o un CVV, se rechaza.
