@@ -6,6 +6,7 @@ import { ProtectedRoute } from './routes/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { LoginForm } from './features/auth/LoginForm';
 import { RegisterForm } from './features/auth/RegisterForm';
+import { ConfirmacionCuenta } from './features/auth/ConfirmacionCuenta';
 import { Tienda } from './features/tienda/Tienda';
 import { Carrito } from './features/tienda/Carrito';
 import { LimiteError } from './components/LimiteError';
@@ -39,6 +40,7 @@ export default function App() {
                 <Route path="/carrito" element={<Carrito />} />
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/registro" element={<RegisterForm />} />
+                <Route path="/auth/confirmado" element={<ConfirmacionCuenta />} />
                 <Route path="/unauthorized" element={<p className="centro">No tenés permiso para ver esta página.</p>} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/mis-pedidos" element={<MisPedidos />} />

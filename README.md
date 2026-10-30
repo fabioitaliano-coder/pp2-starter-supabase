@@ -66,7 +66,9 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
    npm run dev   # http://localhost:5173
    ```
 
-9. **(Opcional) Publicala en Vercel.** Ver [Despliegue en Vercel](#despliegue-en-vercel).
+   Para que el registro con confirmación por mail funcione, configurá las URL de Auth de tu proyecto: ver [Conectar el dominio con Supabase](#conectar-el-dominio-con-supabase-registro-confirmación-de-email-y-mi-cuenta).
+
+9. **(Opcional) Publicala en Vercel.** Ver [Despliegue en Vercel](#despliegue-en-vercel). Después agregá la URL del deploy en Supabase (Site URL y Redirect URLs).
 
 **Si algo falla:** si la app avisa que faltan variables de Supabase, revisá que el archivo se llame exactamente `.env`, que esté en la raíz del proyecto y reiniciá `npm run dev`. Si `npm run seed` falla, revisá `SUPABASE_SECRET_KEY` y que hayas ejecutado `schema.sql` antes. Dudas: foro de consultas del aula virtual.
 
@@ -76,6 +78,7 @@ Seguí estos pasos en orden para tener el starter andando en tu computadora con 
 | :--- | :--- |
 | Alta de usuario con perfil automático (trigger) | `supabase/schema.sql`, secciones 2 y 3 |
 | El rol **nunca** se toma de lo que manda el cliente | trigger `handle_new_user()` y `RegisterForm.tsx` |
+| Registro con «Confirmar contraseña», confirmación por mail, reenvío y vuelta al mismo sitio | `RegisterForm.tsx`, `ConfirmacionCuenta.tsx`, `retornoAuth.ts`, `ReenviarConfirmacion.tsx` |
 | Catálogo público y carrito lateral | `Tienda.tsx`, `CartPanel.tsx` |
 | Checkout por pasos (entrega → pago simulado → revisión) con resumen siempre visible | `src/features/checkout/`, `ResumenCompra.tsx` |
 | Pago simulado: al servidor solo viajan marca y últimos 4 (nunca número completo ni CVV) | `PasoPago.tsx`, `tarjetaSimulada.ts`, `crear_pedido()` |
@@ -199,6 +202,7 @@ src/
   context/                 AuthContext (sesión y rol), CartContext (carrito local)
   routes/                  ProtectedRoute
   components/              Layout, CartPanel, Campo, ResumenCompra, LineaTiempo, DatosPedido, Esqueleto…
+  features/auth/           Ingreso, registro y confirmación de cuenta (/auth/confirmado)
   features/tienda/         Catálogo
   features/checkout/       Checkout por pasos y confirmación
   features/client/         Mis pedidos, seguimiento, factura, Mi cuenta
@@ -365,9 +369,47 @@ La aplicación usa React Router para mostrar rutas como `/login` y `/admin` en e
 
 **La pestaña en blanco después de un deploy.** Cada build genera archivos con hash nuevo y borra los viejos. Si alguien tenía la app abierta y navega a una pantalla de carga diferida, el navegador pide un chunk que ya no existe. Antes, ese pedido recibía `index.html` (HTML en lugar de JavaScript) y la pantalla quedaba en blanco. Ahora el 404 es real, Vite dispara `vite:preloadError` y `main.tsx` recarga la página **una sola vez** (`recargaChunk.ts`), con lo que se baja la versión nueva. Si aun así falla, `LimiteError.tsx` muestra un mensaje con un botón para recargar.
 
-### Conectar el dominio con Supabase
+### Conectar el dominio con Supabase (registro, confirmación de email y Mi cuenta)
 
-En el proyecto de Supabase, abrí **Authentication → URL Configuration** y configurá la URL pública del sitio como **Site URL**. Agregá también las URL de los despliegues de prueba que necesites en **Redirect URLs**, en especial si vas a probar confirmación de correo, recuperación de contraseña o el **cambio de email de Mi cuenta** (el enlace de confirmación vuelve a `/cuenta`). Las cuentas `@demo.test` no reciben correo: para probar el cambio de email usá una cuenta registrada con un mail real tuyo. Así Supabase puede volver al dominio correcto después de esos flujos.
+> [!TIP]
+> **Síntoma:** «Me registré, me llegó el mail, pero al tocar el enlace no quedé logueado» o «el enlace me lleva a `http://localhost:3000`».
+>
+> **Causa:** en un proyecto nuevo de Supabase la **Site URL** viene en `http://localhost:3000`. Supabase confirma la cuenta igual, pero después redirige a la Site URL salvo que la dirección que pide la app (`emailRedirectTo`) esté en la lista de **Redirect URLs**. Si ninguna coincide con tu sitio, el navegador termina en otro lado y la sesión no se inicia donde estabas.
+>
+> **Arreglo A · Panel:** **Authentication → URL Configuration**
+> - **Site URL:** la URL de tu deploy, por ejemplo `https://tu-app.vercel.app`.
+> - **Redirect URLs:** `https://tu-app.vercel.app/**` y `http://localhost:5173/**` (5173 es el puerto por defecto de `npm run dev`; si Vite te muestra otro, usá ese).
+>
+> **Arreglo B · Supabase CLI:** un `supabase/config.toml` mínimo, **solo** con lo que querés cambiar:
+>
+> ```toml
+> project_id = "TU_PROJECT_REF"   # lo que va antes de .supabase.co
+>
+> [auth]
+> site_url = "https://tu-app.vercel.app"
+> additional_redirect_urls = ["https://tu-app.vercel.app/**", "http://localhost:5173/**"]
+> ```
+>
+> ```bash
+> npx supabase link --project-ref TU_PROJECT_REF
+> npx supabase config diff    # muestra qué cambiaría en el proyecto remoto
+> npx supabase config push    # pide confirmación por cada cambio
+> ```
+>
+> `config push` solo sube las propiedades que el archivo declara; las demás quedan como están. **Leé siempre el diff antes de confirmar.** Ojo: el `config.toml` completo que genera `npx supabase init` declara muchísimas opciones con valores de desarrollo local (entre ellas `site_url = "http://127.0.0.1:3000"`); si lo subís sin revisar, pisás la configuración del proyecto.
+>
+> **Si cambiás de dominio** (otro proyecto de Vercel, un dominio propio, renombrás el proyecto), actualizá la Site URL y las Redirect URLs. El nuevo deploy no lo hace solo.
+
+Así funciona el circuito en este starter:
+
+1. `RegisterForm.tsx` llama a `signUp` con `emailRedirectTo = <origen actual>/auth/confirmado`. Por eso el enlace vuelve al mismo sitio donde la persona se registró: la demo o `localhost`.
+2. Supabase verifica el token y redirige con la sesión en el `#hash`. `supabase-js` la detecta sola (`detectSessionInUrl`, flujo implícito: el enlace funciona aunque lo abras en otro dispositivo).
+3. `ConfirmacionCuenta.tsx` lleva a la tienda con el aviso «Cuenta confirmada». Si el enlace venció o ya se usó (`otp_expired`), explica qué pasó y ofrece **reenviar el mail** (`supabase.auth.resend`, con 60 s de espera entre envíos). Si el enlace cayó en la Site URL, `Layout.tsx` igual lo deriva a esa pantalla.
+4. Si alguien intenta ingresar sin haber confirmado, el login dice «Todavía no confirmaste tu email» y ofrece reenviar, en vez de «contraseña incorrecta».
+
+**«Confirm email»** (**Authentication → Sign In / Providers → Email**): si está activado, la cuenta no puede ingresar hasta tocar el enlace (es lo recomendable y lo que asume esta app). Si lo desactivás, `signUp` inicia sesión en el acto y la app va directo a la tienda. En la misma pantalla está **Minimum password length**: ponelo en 8 para que coincida con la validación del formulario. El SMTP de prueba de Supabase manda **muy pocos mails por hora**; si probás muchas altas seguidas, vas a ver el aviso de límite. Los correos institucionales a veces «revisan» los enlaces antes que vos y los consumen: si te aparece «enlace vencido», probá ingresar, porque la cuenta puede ya estar confirmada.
+
+El **cambio de email de Mi cuenta** usa el mismo mecanismo: el enlace vuelve a `/cuenta`, que también queda cubierto por `/**`. Las cuentas `@demo.test` no reciben correo: para probar estos flujos usá un mail real tuyo.
 
 > **Importante:** en Vercel configurá únicamente la URL del proyecto y la clave *publishable*. No agregues `SUPABASE_SECRET_KEY` ni una clave antigua `service_role`: esas credenciales evitan RLS y son solo para ejecutar scripts locales. Si una clave secreta se publica accidentalmente, rotala desde Supabase.
 
