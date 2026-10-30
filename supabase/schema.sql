@@ -4,8 +4,9 @@
 -- Cómo ejecutarlo: Supabase Studio > SQL Editor > New query > pegar > Run.
 -- Es idempotente: se puede correr más de una vez (proyecto vacío o demo ya creada).
 -- Solo datos ficticios (Ley 25.326).
--- Los nombres (crear_pedido, pedido_detalles, producto_nombre) coinciden con la
--- app de referencia ecommerce-ifts16-supabase, en una versión más chica.
+-- Es el esquema de E-Commerce PP2, la app de referencia de la materia: primero el
+-- núcleo (auth, perfiles y roles, RLS, catálogo, carrito, crear_pedido(), admin)
+-- y después lo avanzado (checkout, seguimiento, factura simulada y Mi cuenta).
 
 -- 1. ROLES ---------------------------------------------------------------------
 DO $$ BEGIN
@@ -250,7 +251,7 @@ GRANT  EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 -- Concepto · El navegador manda solo [{ producto_id, cantidad }], el domicilio y el
 -- MÉTODO de pago. Precio y stock salen de la fila real, bloqueada con FOR UPDATE (dos
 -- compras no venden la misma última unidad). Si algo falla, RAISE EXCEPTION revierte
--- pedido y stock juntos. Misma idea que en ecommerce-ifts16-supabase, sin descuentos.
+-- pedido y stock juntos. Sin descuentos, para que el ejemplo quede simple.
 -- Concepto · Pago simulado: de una tarjeta solo viajan marca y últimos 4 dígitos.
 -- En un sistema real los datos completos van a la pasarela (Mercado Pago, Stripe…)
 -- y la base guarda un token. Si llega un número completo o un CVV, se rechaza.

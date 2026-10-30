@@ -1,8 +1,8 @@
-# PP2 · Starter Supabase (React + Vite + TypeScript)
+# E-Commerce PP2 · Supabase (React + Vite + TypeScript)
 
 Aplicación de referencia de Práctica Profesionalizante II · IFTS 16. Muestra el camino **Supabase como BaaS**: el navegador habla directo con Supabase y la seguridad vive en la base (RLS), no en un servidor propio.
 
-Este repo es la **base copiable** (auth, RLS, catálogo, carrito, checkout por pasos con pago simulado, seguimiento de pedidos, factura simulada y Mi cuenta). Cuando termines de recorrerlo, el siguiente paso es la app completa: [`ecommerce-ifts16-supabase`](https://github.com/fabioitaliano-coder/ecommerce-ifts16-supabase) (categorías, descuentos, Storage, administración de catálogo).
+Este repo es la **única app de referencia** de la materia y la **base copiable** para tu proyecto. Recorrelo en este orden: primero el núcleo (auth, perfiles y roles, RLS, catálogo, carrito, `crear_pedido()`, administración y estados, pruebas) y después lo avanzado/opcional (checkout por pasos con pago simulado, seguimiento de pedidos, factura simulada y Mi cuenta).
 
 Datos 100 % ficticios (Ley 25.326). Licencia MIT.
 
@@ -286,7 +286,7 @@ Para comprobar el code splitting: `npm run build` y mirá `dist/assets`.
 
 ## UI y guía de diseño
 
-La interfaz usa el mismo sistema visual que [`ecommerce-ifts16-supabase`](https://github.com/fabioitaliano-coder/ecommerce-ifts16-supabase): CSS plano y variables en [`src/index.css`](./src/index.css). La guía está en [`design.md`](./design.md). Antes de pedir un cambio visual, pedile que lea esa guía, reutilice las clases existentes (`tienda-layout`, `CartPanel`, `estado`, `insignia-stock`) y no agregue Tailwind ni otra biblioteca de componentes.
+La interfaz usa un sistema visual propio: CSS plano y variables en [`src/index.css`](./src/index.css). La guía está en [`design.md`](./design.md). Antes de pedir un cambio visual, pedile que lea esa guía, reutilice las clases existentes (`tienda-layout`, `CartPanel`, `estado`, `insignia-stock`) y no agregue Tailwind ni otra biblioteca de componentes.
 
 Ejemplo de solicitud:
 

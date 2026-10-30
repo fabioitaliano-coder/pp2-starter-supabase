@@ -1,6 +1,6 @@
-# Design system — PP2 Starter Supabase
+# Design system — E-Commerce PP2
 
-Este documento es la referencia visual del starter. Leelo antes de cambiar pantallas, estilos o componentes. El sistema es el mismo que el de la app de referencia [`ecommerce-ifts16-supabase`](https://github.com/fabioitaliano-coder/ecommerce-ifts16-supabase): CSS plano con variables en `src/index.css`. No se usa Tailwind ni se generan paletas automáticamente. No agregues shadcn/ui ni otra biblioteca visual.
+Este documento es la referencia visual de E-Commerce PP2. Leelo antes de cambiar pantallas, estilos o componentes. El sistema es CSS plano con variables en `src/index.css`. No se usa Tailwind ni se generan paletas automáticamente. No agregues shadcn/ui ni otra biblioteca visual.
 
 ## Dirección visual
 
