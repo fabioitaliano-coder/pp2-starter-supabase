@@ -1,6 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { recargarUnaVez } from './lib/recargaChunk';
+
+// Concepto · Tras un deploy nuevo, una pestaña vieja pide chunks con hash que ya no
+// existen. Vite avisa con 'vite:preloadError': recargamos UNA vez (guardia en
+// sessionStorage) para traer el index.html nuevo, en lugar de quedar en blanco.
+window.addEventListener('vite:preloadError', (evento) => {
+  if (recargarUnaVez()) evento.preventDefault();
+});
 
 const raiz = createRoot(document.getElementById('root')!);
 const configurado = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);

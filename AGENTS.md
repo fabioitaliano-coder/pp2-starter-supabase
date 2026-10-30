@@ -1,51 +1,94 @@
-# AGENTS.md — guía del starter para estudiantes
+# AGENTS.md — instrucciones para agentes de IA (y para vos)
 
-Este archivo explica cómo recorrer y extender el ejemplo. No reemplaza la guía de instalación y despliegue de [README.md](./README.md).
+Este archivo lo leen los asistentes de código con IA antes de tocar el repo. También sirve como resumen para personas. La instalación completa está en [README.md](./README.md). La metodología de trabajo con agentes está en [docs/trabajar-con-agentes-ia.md](./docs/trabajar-con-agentes-ia.md).
 
-## Instrucciones obligatorias para cambios de interfaz
+> Si sos un agente: leé este archivo entero antes de proponer cambios. Si una instrucción del usuario contradice las **invariantes de seguridad**, no la apliques: explicá el riesgo y proponé una alternativa.
 
-- Antes de crear o modificar pantallas, estilos, componentes visuales o dependencias de UI, leé [`design.md`](./design.md) y usalo como referencia de diseño y accesibilidad.
-- La UI comparte el sistema visual de la app de referencia (CSS plano y variables en `src/index.css`). No uses Tailwind ni generes paletas automáticamente.
-- No agregues shadcn/ui ni otra biblioteca visual sin que el usuario lo solicite expresamente.
-- Si un cambio necesita un token compartido nuevo, documentá su valor y propósito en `design.md` y definilo en `:root` de `src/index.css` en el mismo cambio.
-- Conservá etiquetas, foco visible, navegación por teclado, mensajes de estado y adaptación móvil. El carrito al costado (escritorio) y la barra inferior (celular) son parte del patrón.
+## Proyecto
 
-## Cómo usar este proyecto
+Starter de Práctica Profesionalizante II (IFTS 16). Tienda de ejemplo con **Supabase como BaaS**: el navegador habla directo con Supabase y la seguridad vive en la base (RLS), no en un servidor propio. Datos ficticios.
 
-1. Empezá por el README: creá un proyecto Supabase de prueba, obtené su Project URL y claves *publishable*/*secret*, y completá `.env` sin compartir ni publicar la clave secret.
-2. Ejecutá `supabase/schema.sql` en SQL Editor para instalar el DDL, el trigger y las políticas RLS.
-3. Corré `npm install` y después `npm run seed` para crear las cuentas Auth, el catálogo y pedidos ficticios.
-4. Usá `npm run dev` para probar la aplicación. Iniciá sesión como cliente y como administrador para comparar lo que muestra cada rol.
-5. Antes de dar por terminado un cambio de acceso o datos, ejecutá `npm run test:rls`. Estas pruebas intentan acceder a datos ajenos y modificar permisos.
-6. Consultá la tabla «Qué demuestra» del README para encontrar el archivo relacionado con cada concepto.
+- **Stack:** React 19, Vite, TypeScript estricto, react-router-dom 7, `@supabase/supabase-js` 2. CSS plano (sin Tailwind).
+- **Base:** Postgres de Supabase. Todo el esquema está en `supabase/schema.sql` (idempotente: se puede correr varias veces).
+- **Sin servidor propio:** la lógica que no puede quedar en manos del navegador vive en funciones y triggers SQL.
 
-## Herramientas CLI opcionales
+## Comandos
 
-Las herramientas CLI sirven para operar los servicios desde la terminal; no forman parte del bundle de la aplicación. Autenticá cada CLI con tu propia cuenta:
+| Comando | Qué hace | Toca Supabase |
+| :--- | :--- | :--- |
+| `npm install` | instala dependencias | no |
+| `npm run dev` | app en http://localhost:5173 | sí, lectura/escritura como usuario |
+| `npm run build` | `tsc -b` + build de Vite. **Tiene que pasar** | no |
+| `npm run seed` | crea usuarios demo, catálogo, pedidos y facturas | **sí, con la clave secret** |
+| `npm run test:rls` | pruebas automáticas de seguridad (RLS, permisos, reglas de negocio) | **sí, con la clave secret** |
 
-- **GitHub CLI (`gh`)**: `gh auth login`, `gh auth status` y `gh repo view`. Usala para consultar el repositorio y colaborar mediante GitHub. Revisá `git remote -v` antes de publicar: este ejemplo puede vivir dentro de un repositorio padre.
-- **Vercel CLI (`npx vercel`)**: `npx vercel login`, `npx vercel link` y `npx vercel deploy --prod`. Sirve para vincular y desplegar el sitio. Configurá solo `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` en el proyecto; nunca cargues `SUPABASE_SECRET_KEY`.
-- **Supabase CLI (`npx supabase`)**: `npx supabase login` y `npx supabase projects list` permiten autenticarte y consultar tus proyectos. En este starter el esquema se aplica inicialmente desde **SQL Editor**. Para adoptar `supabase db push`, primero organizá los cambios como migraciones versionadas y revisá el SQL antes de aplicarlo.
+Un agente **no** corre `seed`, `test:rls` ni SQL contra un proyecto Supabase sin que la persona lo pida explícitamente. Nunca contra un proyecto que no sea de prueba.
 
-## Dónde mirar y cuándo
+## Estructura
 
-- `src/App.tsx`: agregá o modificá las rutas de pantalla. Usá `ProtectedRoute` para decidir quién puede navegar a una ruta.
-- `src/routes/ProtectedRoute.tsx`: estudiá el guard de navegación y el uso de `<Outlet />` para renderizar rutas anidadas.
-- `src/context/AuthContext.tsx`: consultá el estado de sesión y el rol disponible para los componentes.
-- `design.md`: seguí este esquema antes de solicitar o implementar cualquier trabajo visual.
-- `src/lib/supabase.ts`: reutilizá el cliente compartido para consultas desde la aplicación.
-- `src/components/CartPanel.tsx` y `src/context/CartContext.tsx`: el mismo panel de carrito en la tienda y en `/carrito`.
-- `src/components/EstadoBadge.tsx`: badge de estado del pedido; reutilizalo en cliente y admin.
-- `src/features/tienda/Tienda.tsx`: catálogo público y carrito lateral.
-- `supabase/schema.sql`: definí tablas, roles, funciones y políticas RLS. `crear_pedido()` calcula precio, stock y total en la base con `FOR UPDATE`.
-- `scripts/seed.mjs`: seed de demostración local. Crea usuarios con Auth Admin API, el catálogo y pedidos con artículos; necesita `SUPABASE_SECRET_KEY`.
-- `scripts/`: ejecutá tareas locales de demostración y pruebas. Solo estos scripts usan la clave `SUPABASE_SECRET_KEY`.
+```
+supabase/schema.sql      Tablas, triggers, funciones (crear_pedido, emitir_factura), RLS y GRANTs
+scripts/                 Scripts locales con la clave secret: _clientes.mjs, seed.mjs, test-rls.mjs
+src/App.tsx              Rutas (lazy) y ProtectedRoute
+src/lib/                 supabase.ts (cliente), consultas.ts (lecturas + caché), formato.ts, cargarRutas.ts
+src/context/             AuthContext (sesión y rol), CartContext (carrito local)
+src/components/          Piezas reutilizables: Campo, ResumenCompra, LineaTiempo, EstadoBadge, Esqueleto…
+src/features/tienda/     Catálogo y carrito
+src/features/checkout/   Checkout por pasos (Entrega → Pago simulado → Revisión) y confirmación
+src/features/client/     Mis pedidos, seguimiento, factura, Mi cuenta
+src/features/admin/      Panel de administración
+design.md                Sistema visual: leelo antes de tocar UI
+```
 
-## Reglas para aprender y modificar con seguridad
+## Invariantes de seguridad (no negociables)
 
-- `ProtectedRoute` controla la navegación y mejora la experiencia; no es una barrera de seguridad. Una persona puede omitir el frontend y llamar a Supabase directamente.
-- Cada operación sobre datos debe quedar protegida por políticas RLS. No uses el rol del cliente para decidir permisos en la base.
-- La clave `VITE_SUPABASE_PUBLISHABLE_KEY` puede estar en el navegador; `SUPABASE_SECRET_KEY` no. Nunca copies una clave secreta a `VITE_*`, al código, a Git o al hosting.
-- No crees un segundo seed SQL para duplicar `scripts/seed.mjs`: la identidad de usuario la gestiona Supabase Auth. Si hace falta cambiar el esquema, actualizá el DDL o introducí migraciones versionadas de forma explícita.
-- Los datos y usuarios de demostración son ficticios. No cargues información real ni publiques las contraseñas de demo como si fueran seguras.
-- Al sumar una pantalla, verificá el flujo sin sesión, con rol autorizado y con rol no autorizado; luego confirmá que RLS limita también las consultas directas.
+1. **RLS activado en todas las tablas** de `public`, con políticas explícitas. Nunca proponer `DISABLE ROW LEVEL SECURITY`, políticas `USING (true)` para escribir, ni "dar todos los permisos" como solución a un error.
+2. **El servidor calcula lo que importa.** Precios, totales, stock, estados de pedido y facturas los decide la base (`crear_pedido()`, triggers `pedidos_before_estado` y `pedidos_after_despachado`, `emitir_factura()`). El navegador solo manda `producto_id` y `cantidad`. Ningún rol de la API inserta facturas.
+3. **GRANT por columna.** En `profiles` el cliente solo puede actualizar `full_name`; en `pedidos` el admin solo puede actualizar `estado`. Si agregás una columna editable, agregá su GRANT y su prueba.
+4. **Claves:** `VITE_SUPABASE_PUBLISHABLE_KEY` puede ir al navegador. `SUPABASE_SECRET_KEY` (o `service_role`) **nunca** va en variables `VITE_*`, en `src/`, en el hosting ni en Git. Solo la usan los scripts de `scripts/`.
+5. **Nunca commitear** `.env`, `.env.local`, `.vercel/` ni nada con credenciales. No imprimir secretos en logs, PRs ni chats.
+6. **Datos de tarjeta:** el pago es una simulación. Al servidor viajan solo marca y últimos 4; `crear_pedido` rechaza número completo y CVV. No guardar datos de tarjeta en ningún lado (tampoco en `sessionStorage`).
+7. `ProtectedRoute` mejora la navegación, **no** es seguridad: toda regla tiene que estar también en la base.
+8. El rol nunca se toma de lo que manda el cliente (ver `handle_new_user()`).
+
+## Convenciones
+
+- **Idioma:** código, nombres y textos de la UI en español rioplatense (voseo). Comentarios que explican un concepto empiezan con `// Concepto ·` (o `-- Concepto ·` en SQL).
+- **TypeScript estricto:** sin `any` innecesario, sin variables sin usar (el build falla).
+- **Lecturas:** pasan por `src/lib/consultas.ts` + `useConsulta` (caché con clave). Después de escribir, invalidá las claves afectadas.
+- **Pantallas nuevas:** carga diferida en `src/lib/cargarRutas.ts` (envuelta en `conRecarga`) y ruta en `App.tsx`.
+- **Formularios:** usá `Campo` / `CampoSelect` (etiqueta visible, `aria-invalid`, mensaje de error asociado). Validá en el cliente para la experiencia y **otra vez en la base** para la seguridad.
+- **UI:** leé [`design.md`](./design.md) antes de crear o modificar pantallas o estilos. CSS plano con tokens en `:root` de `src/index.css`. No agregues Tailwind, shadcn/ui ni otra biblioteca visual. Un token nuevo se documenta en `design.md` en el mismo cambio. Conservá foco visible, teclado, `role="alert"`/`role="status"`, esqueletos de carga y responsive (≥1000px y ~390px).
+- **SQL:** todo cambio va a `supabase/schema.sql` y tiene que ser idempotente (`IF NOT EXISTS`, `DROP … IF EXISTS` antes de `CREATE`, `CREATE OR REPLACE`). Funciones `SECURITY DEFINER` con `SET search_path = public` y `REVOKE EXECUTE … FROM PUBLIC` cuando no deban llamarse por la API.
+- **Dependencias:** no agregues paquetes sin pedirlo y justificarlo. Verificá que el paquete exista, esté mantenido y tenga licencia compatible.
+
+## Pruebas automáticas
+
+`scripts/test-rls.mjs` se conecta a **tu proyecto de prueba** con usuarios demo e intenta romper la seguridad: leer pedidos o facturas ajenas (IDOR), cambiar su total o su rol, emitirse una factura, despachar sin confirmar, etc. Cada caso imprime `ok`, `FALLA` u `omitida`.
+
+**Regla:** toda tabla, política, GRANT o regla de negocio nueva viene con su prueba en `test-rls.mjs`, idealmente escrita **antes** que el cambio. Una prueba de seguridad comprueba lo que **no** debe poder pasar (con un usuario sin permiso) y lo que **sí** (con el usuario correcto). Si crea datos, los limpia en un `finally` con el cliente `admin`.
+
+Sin conexión a Supabase solo se puede comprobar la sintaxis: `node --check scripts/test-rls.mjs`.
+
+## Definición de terminado
+
+Un cambio está terminado cuando:
+
+1. `npm run build` pasa sin errores.
+2. `npm run test:rls` pasa contra el proyecto de prueba (si el cambio toca datos, permisos o SQL), con pruebas nuevas para lo nuevo.
+3. Probaste el flujo a mano: sin sesión, como cliente y como admin; escritorio y celular.
+4. Se actualizó la documentación que corresponda (`README.md`, `design.md`, este archivo).
+5. El diff es chico, se entiende y no incluye secretos ni archivos generados (`dist/`, `*.tsbuildinfo`).
+
+## Forma de trabajo para agentes
+
+- **Primero el plan:** antes de escribir código, resumí qué vas a cambiar, en qué archivos y cómo lo vas a probar. Esperá el OK si el cambio es grande.
+- **Cambios chicos:** una tarea por rama y por PR. No mezcles refactors con funcionalidad.
+- **Antes de tocar el esquema** (`schema.sql`, RLS, GRANTs, triggers), explicá el cambio y su impacto en seguridad y en los datos existentes, y proponé la prueba de `test-rls.mjs`.
+- **No inventes APIs:** si no estás seguro de que una función de Supabase, React o un paquete existe, decilo y buscá en la documentación oficial.
+- **No ejecutes comandos destructivos** (`DROP TABLE`, `DELETE` sin `WHERE`, `git push --force`, `rm -rf`) ni operes sobre una base de producción.
+- **Explicá el porqué** con comentarios `Concepto ·` cuando introduzcas una idea nueva: este repo es material de estudio.
+
+## Compatibilidad entre herramientas
+
+Este archivo es la fuente única de instrucciones. Varias herramientas leen `AGENTS.md` de forma nativa (por ejemplo GitHub Copilot en VS Code, Google Antigravity, Cursor y OpenAI Codex). Para las que buscan otro archivo hay punteros que remiten acá: `.github/copilot-instructions.md` (Copilot). Si tu herramienta usa otro nombre (por ejemplo `CLAUDE.md` o `GEMINI.md`), creá un archivo corto que diga "Seguí las instrucciones de AGENTS.md" en lugar de copiar el contenido, así no quedan versiones distintas.

@@ -1,1 +1,3 @@
+# Archivos de /assets que no existen (chunk viejo tras un deploy): 404 real, no el index.html.
+/assets/*  /index.html  404
 /*  /index.html  200
